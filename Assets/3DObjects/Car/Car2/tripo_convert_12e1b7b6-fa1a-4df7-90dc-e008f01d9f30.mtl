@@ -1,0 +1,13 @@
+# Blender 4.5.2 LTS MTL File: 'None'
+# www.blender.org
+
+newmtl tripo_mat_12e1b7b6-fa1a-4df7-90dc-e008f01d9f30
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd tripo_image_12e1b7b6-fa1a-4df7-90dc-e008f01d9f30_0.jpg
+map_Bump -bm 1.000000 tripo_image_12e1b7b6-fa1a-4df7-90dc-e008f01d9f30_2.jpg
