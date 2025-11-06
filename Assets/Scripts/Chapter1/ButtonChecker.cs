@@ -3,11 +3,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
+[DisallowMultipleComponent]
 public class ButtonChecker : MonoBehaviour {
     [Header("Refs")]
     public Light indicator;
-    public GameManagerChap1 gameManager; 
+    public GameManagerChap1 gameManager;
     public Transform player;
+    public Camera viewCamera;
     public AudioClip pressSfx;
     public float pressVolume = 1f;
 
@@ -25,13 +27,13 @@ public class ButtonChecker : MonoBehaviour {
     [Header("Shutter Open")]
     public Transform shutter;
     public float openDuration = 4.0f;
-    public bool shutterPivotAtBottom = false;
-    public float openTravel = 1.2f;
     public AudioClip shutterSfx;
     [Range(0f, 1f)] public float shutterVolume = 1f;
     public AnimationCurve ease = AnimationCurve.Linear(0, 0, 1, 1);
 
     private AudioSource audioSource;
+    private MeshCollider childMeshCollider;
+    private bool isActivated = false;
     private bool shutterPlayed = false;
 
     private void Awake() {
@@ -40,11 +42,24 @@ public class ButtonChecker : MonoBehaviour {
         }
         if (player == null) {
             var pc = FindFirstObjectByType<PlayerController>();
-            if (pc != null)
-                player = pc.transform;
+            if (pc != null) player = pc.transform;
+        }
+
+        if (viewCamera == null) {
+            if (player != null) viewCamera = player.GetComponentInChildren<Camera>();
+            if (viewCamera == null) viewCamera = Camera.main;
+        }
+
+        var all = GetComponentsInChildren<MeshCollider>(includeInactive: true);
+        foreach (var mc in all) {
+            if (mc.transform != transform) {
+                childMeshCollider = mc;
+                break;
+            }
         }
 
         audioSource = GetComponent<AudioSource>();
+        audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
     }
@@ -57,9 +72,23 @@ public class ButtonChecker : MonoBehaviour {
     private void Update() {
         bool within = InRange();
 
-        outline.enabled = within;
-        if (!within)
-            return;
+        bool isLooking = false;
+        if (within && viewCamera != null && childMeshCollider != null) {
+            if (Physics.Raycast(viewCamera.transform.position,
+                                viewCamera.transform.forward,
+                                out var hit, interactDistance)) {
+                isLooking = (hit.collider == childMeshCollider);
+            }
+        }
+
+        if (within && isLooking && gameManager.State != GameManagerChap1.ChapState.Hunting) {
+            gameManager.Pressable();
+        }
+
+        if (outline != null) {
+            bool interactableNow = gameManager.State != GameManagerChap1.ChapState.ShutterOpened;
+            outline.enabled = within && interactableNow && !isActivated;
+        }
 
         bool fPressed = false;
 #if ENABLE_INPUT_SYSTEM
@@ -68,7 +97,8 @@ public class ButtonChecker : MonoBehaviour {
 #endif
         if (Input.GetKeyDown(KeyCode.F))
             fPressed = true;
-        if (!fPressed)
+
+        if (!within || !isLooking || !fPressed)
             return;
 
         switch (gameManager.State) {
@@ -76,6 +106,8 @@ public class ButtonChecker : MonoBehaviour {
                 PlayPress();
                 gameManager.StartHunt(this);
                 SetIndicatorHunting();
+                isActivated = true;
+                if (outline != null) outline.enabled = false;
                 break;
 
             case GameManagerChap1.ChapState.Hunting:

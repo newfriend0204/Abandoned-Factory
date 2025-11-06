@@ -9,6 +9,7 @@ public class ButtonInteract : MonoBehaviour {
     public Light targetLight;
     public GameManagerChap1 gameManager;
     public Transform player;
+    public Camera viewCamera;
     public AudioClip pressSfx;
     public float pressVolume = 1f;
     private AudioSource audioSource;
@@ -22,15 +23,30 @@ public class ButtonInteract : MonoBehaviour {
     public bool lightOffBeforeHunt = true;
 
     private bool isActivated;
+    private MeshCollider childMeshCollider;
     private bool HuntActive => gameManager.State == GameManagerChap1.ChapState.Hunting;
 
     private void Awake() {
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManagerChap1>();
         if (player == null) {
-            PlayerController pc = FindFirstObjectByType<PlayerController>();
+            var pc = FindFirstObjectByType<PlayerController>();
             if (pc != null)
                 player = pc.transform;
+        }
+        if (viewCamera == null) {
+            if (player != null)
+                viewCamera = player.GetComponentInChildren<Camera>();
+            if (viewCamera == null)
+                viewCamera = Camera.main;
+        }
+
+        var all = GetComponentsInChildren<MeshCollider>(includeInactive: true);
+        foreach (var mc in all) {
+            if (mc.transform != transform) {
+                childMeshCollider = mc;
+                break;
+            }
         }
 
         audioSource = GetComponent<AudioSource>();
@@ -40,17 +56,30 @@ public class ButtonInteract : MonoBehaviour {
 
     private void Start() {
         outline.enabled = false;
-
         if (lightOffBeforeHunt && gameManager.State != GameManagerChap1.ChapState.Hunting) {
             targetLight.enabled = false;
         }
     }
 
     private void Update() {
+        if (!HuntActive)
+            return;
+
         float dist = Vector3.Distance(player.position, transform.position);
         bool within = dist <= interactDistance;
 
-        outline.enabled = within && !isActivated && HuntActive;
+        outline.enabled = within && !isActivated;
+
+        bool isLooking = false;
+        if (within) {
+            if (Physics.Raycast(viewCamera.transform.position, viewCamera.transform.forward, out var hit, interactDistance)) {
+                isLooking = (hit.collider == childMeshCollider);
+            }
+        }
+
+        if (!isActivated && within && isLooking) {
+            gameManager.Pressable();
+        }
 
         bool fPressed = false;
 #if ENABLE_INPUT_SYSTEM
@@ -60,10 +89,7 @@ public class ButtonInteract : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.F))
             fPressed = true;
 
-        if (!HuntActive)
-            return;
-
-        if (!isActivated && within && fPressed) {
+        if (!isActivated && within && isLooking && fPressed) {
             targetLight.color = activeColor;
             isActivated = true;
             outline.enabled = false;

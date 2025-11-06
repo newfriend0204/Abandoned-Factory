@@ -98,4 +98,12 @@ public class GameManagerChap1 : MonoBehaviour {
     public void SealShutterOpened() {
         state = ChapState.ShutterOpened;
     }
+
+    public void Pressable() {
+        Debug.Log("누를 수 있어.");
+    }
+
+    public void Inspect(string sourceName) {
+        Debug.Log(sourceName);
+    }
 }

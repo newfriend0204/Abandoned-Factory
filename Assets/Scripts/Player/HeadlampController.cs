@@ -31,7 +31,6 @@ public class HeadlampController : MonoBehaviour {
     [Header("Hit Probe")]
     public LayerMask occluderMask = ~0;
     public float probeRadius = 0.03f;
-    public bool drawGizmos = false;
 
     public AudioSource audioSource;
     public AudioClip clickOn;
