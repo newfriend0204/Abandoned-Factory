@@ -98,7 +98,7 @@ public class InspectableObject : MonoBehaviour {
         }
 
         if (withinInteract && isLooking) {
-            gameManager.Pressable();
+            gameManager.Pressable(2);
 
             bool fPressed = false;
 #if ENABLE_INPUT_SYSTEM

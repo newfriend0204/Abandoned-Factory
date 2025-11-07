@@ -82,7 +82,7 @@ public class ButtonChecker : MonoBehaviour {
         }
 
         if (within && isLooking && gameManager.State != GameManagerChap1.ChapState.Hunting) {
-            gameManager.Pressable();
+            gameManager.Pressable(1);
         }
 
         if (outline != null) {

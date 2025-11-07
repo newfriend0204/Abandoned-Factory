@@ -78,7 +78,7 @@ public class ButtonInteract : MonoBehaviour {
         }
 
         if (!isActivated && within && isLooking) {
-            gameManager.Pressable();
+            gameManager.Pressable(1);
         }
 
         bool fPressed = false;

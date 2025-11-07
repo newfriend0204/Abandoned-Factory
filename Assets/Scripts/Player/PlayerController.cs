@@ -119,11 +119,9 @@ public class PlayerController : MonoBehaviour {
         baseFOV = playerCamera.fieldOfView;
         camBaseLocalPos = playerCamera.transform.localPosition;
         RecomputeJumpPhysics();
-
         gameStartTime = Time.time;
         lastJumpPressedTime = -999f;
         lastGroundedTime = -999f;
-
         if (lockCursor) {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -131,20 +129,27 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void Update() {
+        if (Time.timeScale == 0f) {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            return;
+        } else {
+            if (lockCursor) {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
         float mx = Input.GetAxisRaw("Mouse X");
         float my = Input.GetAxisRaw("Mouse Y");
         pitch = Mathf.Clamp(pitch - my * sensY, minPitch, maxPitch);
         transform.Rotate(Vector3.up, mx * sensX, Space.Self);
-
         bool ignoreGroundNow = false;
-        if (postJumpIgnoreTimer > 0f) { 
+        if (postJumpIgnoreTimer > 0f) {
             postJumpIgnoreTimer -= Time.deltaTime;
             ignoreGroundNow = true;
         }
-
         grounded = false; onTooSteep = false;
         groundNormal = Vector3.up; slopeAngle = 0f;
-
         if (!ignoreGroundNow && groundCheck != null) {
             int cnt = Physics.OverlapSphereNonAlloc(
                 groundCheck.position, groundCheckRadius, _overlap, groundMask, QueryTriggerInteraction.Ignore
@@ -157,7 +162,6 @@ public class PlayerController : MonoBehaviour {
                 break;
             }
         }
-
         if (grounded) {
             float r = capsule ? capsule.radius : 0.5f;
             float skin = 0.02f;
@@ -165,23 +169,20 @@ public class PlayerController : MonoBehaviour {
                             - (capsule ? (capsule.height * 0.5f - capsule.radius) : 0.5f)
                             + r + skin;
             Vector3 origin = new Vector3(transform.position.x, bottomY + 0.05f, transform.position.z);
-
             if (Physics.SphereCast(origin, r * 0.95f, Vector3.down,
                 out RaycastHit hit, groundProbeDistance, groundMask, QueryTriggerInteraction.Ignore)) {
                 groundNormal = hit.normal;
                 slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
-                if (slopeAngle > maxSlopeAngle) { 
+                if (slopeAngle > maxSlopeAngle) {
                     grounded = false;
                     onTooSteep = true;
                 }
             }
         }
-
         nearWall = false; wallNormal = Vector3.zero;
         float ix = Input.GetAxisRaw("Horizontal");
         float iz = Input.GetAxisRaw("Vertical");
         Vector3 wishDirForWall = (transform.right * ix + transform.forward * iz).normalized;
-
         if (wishDirForWall.sqrMagnitude > 0.01f) {
             float halfH = capsule ? capsule.height * 0.5f : 1f;
             float r = capsule ? capsule.radius : 0.5f;
@@ -195,46 +196,39 @@ public class PlayerController : MonoBehaviour {
                 }
             }
         }
-
         if (Input.GetKeyDown(KeyCode.Space))
             lastJumpPressedTime = Time.time;
         if (grounded)
             lastGroundedTime = Time.time;
-
         bool buffered = (Time.time - lastJumpPressedTime) <= jumpBuffer;
         bool coyote = grounded || (Time.time - lastGroundedTime) <= coyoteTime;
         bool pastStartup = (Time.time - gameStartTime) >= startupIgnoreJumpTime;
         if (!jumpRequested && pastStartup && buffered && coyote)
             jumpRequested = true;
-
         float hzSpeed = new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude;
         float maxSpeed = moveSpeed * sprintMultiplier;
         float speed01 = grounded ? Mathf.Clamp01(hzSpeed / maxSpeed) : 0f;
-
         bool shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool hasMoveInput = (Mathf.Abs(Input.GetAxisRaw("Horizontal")) + Mathf.Abs(Input.GetAxisRaw("Vertical"))) > 0.001f;
         bool sprint = shiftHeld && hasMoveInput;
-
         handAnimator.SetFloat(AnimSpeed, speed01, 0.1f, Time.deltaTime);
         handAnimator.SetBool(AnimSprinting, sprint);
     }
 
     private void FixedUpdate() {
+        if (Time.timeScale == 0f) return;
         float x = Input.GetAxisRaw("Horizontal");
         float z = Input.GetAxisRaw("Vertical");
         bool shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool hasMoveInput = (Mathf.Abs(x) + Mathf.Abs(z)) > 0.001f;
         bool sprint = shiftHeld && hasMoveInput;
-
         float currentSpeed = moveSpeed * (sprint ? sprintMultiplier : 1f);
-
         Vector3 wish = (transform.right * x + transform.forward * z);
         if (grounded && !onTooSteep) {
             wish = Vector3.ProjectOnPlane(wish, groundNormal);
             if (wish.sqrMagnitude > 0.0001f)
                 wish = wish.normalized;
         }
-
         if (nearWall && wish.sqrMagnitude > 0.000001f) {
             Vector3 wishN = wish.normalized;
             float into = Vector3.Dot(wishN, -wallNormal);
@@ -243,11 +237,9 @@ public class PlayerController : MonoBehaviour {
             else
                 wish = Vector3.ProjectOnPlane(wish, wallNormal);
         }
-
         if (wish.sqrMagnitude > 1f)
             wish.Normalize();
         wish *= currentSpeed;
-
         float accel;
         if (grounded) {
             accel = groundAccel + (sprint ? sprintAccelBonus : 0f);
@@ -259,32 +251,27 @@ public class PlayerController : MonoBehaviour {
             accel = curBoost;
             wish *= airControl;
         }
-
         Vector2 tgt = new Vector2(wish.x, wish.z);
         Vector2 cur = new Vector2(rb.linearVelocity.x, rb.linearVelocity.z);
         cur = Vector2.MoveTowards(cur, tgt, accel * Time.fixedDeltaTime);
         rb.linearVelocity = new Vector3(cur.x, rb.linearVelocity.y, cur.y);
-
         if (jumpRequested) {
             Vector3 jv = rb.linearVelocity;
             if (jv.y < 0f)
                 jv.y = 0f;
             jv.y = jumpVelocityY;
             rb.linearVelocity = jv;
-
             grounded = false; onTooSteep = false;
             rb.position += groundNormal * 0.01f;
             postJumpIgnoreTimer = postJumpIgnoreDuration;
             sinceJump = 0f;
             jumpRequested = false;
         }
-
         float extraGravity = customGravityY - Physics.gravity.y;
         Vector3 gravityAccel = new Vector3(0f, extraGravity, 0f);
         if (rb.linearVelocity.y < 0f)
             gravityAccel.y *= 2.2f;
         rb.AddForce(gravityAccel, ForceMode.Acceleration);
-
         if (grounded && !onTooSteep) {
             if (slopeAngle <= noSlideAngle) {
                 Vector3 g = new Vector3(0f, customGravityY, 0f);
@@ -294,9 +281,7 @@ public class PlayerController : MonoBehaviour {
                 rb.AddForce(-groundNormal * stickToGroundAccel, ForceMode.Acceleration);
             }
         }
-
         rb.linearDamping = grounded ? groundDamping : airDamping;
-
         if (!wasGrounded && grounded && Mathf.Abs(yVelPrev) > landingKickThreshold) {
             landingKickT = 1f;
             Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
@@ -305,7 +290,6 @@ public class PlayerController : MonoBehaviour {
         }
         wasGrounded = grounded;
         yVelPrev = rb.linearVelocity.y;
-
         if (capsule != null && (groundMat != null || airMat != null)) {
             PhysicsMaterial targetMat = (grounded && !onTooSteep) ? groundMat : airMat;
             if (capsule.material != targetMat)
@@ -314,6 +298,8 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void LateUpdate() {
+        if (Time.timeScale == 0f)
+            return;
         UpdateCameraFX();
     }
 
@@ -321,10 +307,8 @@ public class PlayerController : MonoBehaviour {
         bool shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool hasMoveInput = (Mathf.Abs(Input.GetAxisRaw("Horizontal")) + Mathf.Abs(Input.GetAxisRaw("Vertical"))) > 0.001f;
         bool sprint = shiftHeld && hasMoveInput;
-
         float targetFov = baseFOV + (sprint ? fovKick : 0f);
         playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFov, Time.deltaTime * fovKickSpeed);
-
         float hzSpeed = new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude;
         bool moving = hzSpeed > 0.1f && hasMoveInput;
         float freq = moving ? (sprint ? headBobRunFreq : headBobWalkFreq) : 0f;
@@ -334,7 +318,6 @@ public class PlayerController : MonoBehaviour {
         else
             bobTimer = 0f;
         float bobOffset = amp * Mathf.Sin(bobTimer * Mathf.PI * 2f);
-
         float kickOffsetY = 0f;
         if (landingKickT > 0f) {
             float t = 1f - landingKickT;
@@ -342,18 +325,14 @@ public class PlayerController : MonoBehaviour {
             kickOffsetY = -landingKickAmp * curve;
             landingKickT = Mathf.MoveTowards(landingKickT, 0f, Time.deltaTime / landingKickDuration);
         }
-
         Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
         float targetRoll = Mathf.Clamp(-velLocal.x / (moveSpeed * sprintMultiplier) * tiltRollMax, -tiltRollMax, tiltRollMax);
         float targetPitch = grounded ? 0f :
             Mathf.Clamp(-velLocal.z / (moveSpeed * sprintMultiplier) * tiltPitchAirMax, -tiltPitchAirMax, tiltPitchAirMax);
-
         float horIn = Mathf.Abs(Input.GetAxisRaw("Horizontal"));
         float rollSpeed = (horIn < 0.001f) ? tiltRollReturnSpeed : tiltRollSpeed;
-
         fxRoll = Mathf.Lerp(fxRoll, targetRoll, Time.deltaTime * rollSpeed);
         fxPitch = Mathf.Lerp(fxPitch, targetPitch, Time.deltaTime * tiltPitchSpeed);
-
         float rollPulse = 0f;
         if (landingRollT > 0f) {
             float t = 1f - landingRollT;
@@ -362,11 +341,9 @@ public class PlayerController : MonoBehaviour {
             rollPulse = landingRollAmp * osc * env * landingRollSign;
             landingRollT = Mathf.MoveTowards(landingRollT, 0f, Time.deltaTime / landingRollDuration);
         }
-
         Vector3 pos = camBaseLocalPos;
         pos.y += bobOffset + kickOffsetY;
         playerCamera.transform.localPosition = pos;
-
         float finalRoll = Mathf.Clamp(fxRoll + rollPulse, -rollClamp, rollClamp);
         playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch, 0f, finalRoll);
     }
