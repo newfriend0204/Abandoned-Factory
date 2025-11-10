@@ -56,6 +56,17 @@ public class GameManagerChap1 : MonoBehaviour {
     public List<Light> auxPowerLights = new List<Light>();
     [SerializeField] private List<int> auxPowerStates = new List<int> { 0, 0, 0, 0 };
 
+    [System.Serializable]
+    private struct StreetLampNode {
+        public Light light;
+        public AudioSource audio;
+        public Transform t;
+        public float dist;
+    }
+    [Header("Street Lamps")]
+    [SerializeField] private float lampStepInterval = 0.10f;
+    private List<StreetLampNode> streetLamps = new List<StreetLampNode>();
+
     private void Awake() {
         getRect = getObject.GetComponent<RectTransform>();
         getBaseAnchoredPos = getRect.anchoredPosition;
@@ -70,6 +81,8 @@ public class GameManagerChap1 : MonoBehaviour {
             inspectItems[i].SetActive(false);
         NormalizeAuxStates();
         ApplyAuxColors();
+
+        CollectAndPrepareStreetLamps();
     }
 
     private void LateUpdate() {
@@ -175,7 +188,7 @@ public class GameManagerChap1 : MonoBehaviour {
 
     public void CloseInspect() {
         for (int i = 0; i < inspectItems.Count; i++)
-                inspectItems[i].SetActive(false);
+            inspectItems[i].SetActive(false);
         inspectRoot.SetActive(false);
         Time.timeScale = prevTimeScale == 0f ? 1f : prevTimeScale;
         Cursor.lockState = CursorLockMode.Locked;
@@ -284,8 +297,8 @@ public class GameManagerChap1 : MonoBehaviour {
     public void TryConfirmMainPower() {
         if (state == ChapState.ShutterOpened)
             state = ChapState.PowerRestoring;
-        if (AreAllAuxOn()) {
-            Debug.Log("모두 복구 완료");
+        if (AreAllAuxOn() && state != ChapState.MainPowerRestored) {
+            StartCoroutine(CoLightUpStreetLamps());
             state = ChapState.MainPowerRestored;
         }
     }
@@ -310,9 +323,52 @@ public class GameManagerChap1 : MonoBehaviour {
         }
     }
 
+    private void Update() {
+        ApplyAuxColors();
+    }
+
     private void Start() {
-        //디버그 코드: 게임 시작 시 강제로 상태 전환
         state = ChapState.PowerRestoring;
         Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
+    }
+
+    public void NorthEasternAreaHintAvailable() {
+        Debug.Log("힌트 사용 가능!");
+    }
+
+    private void CollectAndPrepareStreetLamps() {
+        streetLamps.Clear();
+        var origin = transform.position;
+
+        var allLights = FindObjectsByType<Light>(FindObjectsSortMode.None);
+        for (int i = 0; i < allLights.Length; i++) {
+            var l = allLights[i];
+            if (l.gameObject.name == "StreetLamp") {
+                var a = l.GetComponent<AudioSource>();
+                a.spatialBlend = 1f;
+                l.enabled = false;
+
+                StreetLampNode node = new StreetLampNode {
+                    light = l,
+                    audio = a,
+                    t = l.transform,
+                    dist = Vector3.Distance(origin, l.transform.position)
+                };
+                streetLamps.Add(node);
+            }
+        }
+
+        streetLamps.Sort((x, y) => x.dist.CompareTo(y.dist));
+    }
+
+    private IEnumerator CoLightUpStreetLamps() {
+        yield return new WaitForSeconds(3f);
+
+        for (int i = 0; i < streetLamps.Count; i++) {
+            var node = streetLamps[i];
+            node.light.enabled = true;
+            node.audio.Play();
+            yield return new WaitForSeconds(lampStepInterval);
+        }
     }
 }

@@ -91,7 +91,7 @@ public class AuxiliaryPowerButton : MonoBehaviour {
             gameManager.SetAuxState(auxIndex, 1);
             SyncIndicator();
             PlayPress();
-        } else if (auxOn) {
+        } else if (auxOn && within && (!requireLook || isLooking)) {
             PlayPress();
         }
     }

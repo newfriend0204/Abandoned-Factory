@@ -297,6 +297,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   moveSpeed: 6
   sprintMultiplier: 1.4
+  sprintStaminaMax: 100
+  sprintStamina: 100
+  sprintDrainPerSecond: 20
+  sprintRegenPerSecond: 30
+  sprintRegenDelay: 0.2
+  isExhausted: 0
   playerCamera: {fileID: 2005018053690358317}
   sensX: 2
   sensY: 2
@@ -304,7 +310,7 @@ MonoBehaviour:
   maxPitch: 80
   lockCursor: 1
   jumpHeight: 0.9
-  timeToApex: 0.21
+  timeToApex: 0.2
   postJumpIgnoreDuration: 0.08
   coyoteTime: 0.1
   jumpBuffer: 0.1
