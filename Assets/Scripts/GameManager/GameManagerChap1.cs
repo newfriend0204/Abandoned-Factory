@@ -56,6 +56,17 @@ public class GameManagerChap1 : MonoBehaviour {
     public List<Light> auxPowerLights = new List<Light>();
     [SerializeField] private List<int> auxPowerStates = new List<int> { 0, 0, 0, 0 };
 
+    [Header("Pipe Puzzle")]
+    public List<Light> pipePartLights = new List<Light>(3);
+    public AudioClip pipeSubmitSuccessSfx;
+    public AudioClip pipeSubmitFailSfx;
+    [Range(0f, 1f)] public float pipeSubmitVolume = 1f;
+
+    private readonly Dictionary<int, List<PipePiece>> piecesByPart = new Dictionary<int, List<PipePiece>>();
+    private readonly bool[] partSolved = new bool[3];
+
+    private AudioSource _pipeAudio;
+
     [System.Serializable]
     private struct StreetLampNode {
         public Light light;
@@ -83,6 +94,7 @@ public class GameManagerChap1 : MonoBehaviour {
         ApplyAuxColors();
 
         CollectAndPrepareStreetLamps();
+        InitializePipePuzzle();
     }
 
     private void LateUpdate() {
@@ -164,6 +176,8 @@ public class GameManagerChap1 : MonoBehaviour {
             getText.text = "누르기(F)";
         else if (mode == 2)
             getText.text = "조사하기(F)";
+        else if (mode == 3)
+            getText.text = "돌리기(F)";
         pressablePinged = true;
     }
 
@@ -334,6 +348,84 @@ public class GameManagerChap1 : MonoBehaviour {
 
     public void NorthEasternAreaHintAvailable() {
         Debug.Log("힌트 사용 가능!");
+    }
+
+    private void InitializePipePuzzle() {
+        _pipeAudio = GetComponent<AudioSource>();
+
+        piecesByPart.Clear();
+        for (int i = 0; i < partSolved.Length; i++) {
+            partSolved[i] = false;
+        }
+
+        PipePiece[] pieces;
+
+        pieces = FindObjectsByType<PipePiece>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+
+        for (int i = 0; i < pieces.Length; i++) {
+            var p = pieces[i];
+
+            p.CaptureCorrectAndRandomize();
+
+            int partIndex = p.PartIndex;
+            if (!piecesByPart.ContainsKey(partIndex)) {
+                piecesByPart[partIndex] = new List<PipePiece>();
+            }
+            piecesByPart[partIndex].Add(p);
+        }
+
+        ApplyPipePartLights();
+    }
+
+    public void OnValveSubmitted(int partIndex) {
+        bool allCorrect = IsPartAllCorrect(partIndex);
+
+        if (allCorrect) {
+            partSolved[partIndex] = true;
+            _pipeAudio.PlayOneShot(pipeSubmitSuccessSfx, pipeSubmitVolume);
+        } else {
+            _pipeAudio.PlayOneShot(pipeSubmitFailSfx, pipeSubmitVolume);
+        }
+
+        ApplyPipePartLights();
+
+        if (AllPartsSolved()) {
+            auxPowerStates[3] = 1;
+            ApplyAuxColors();
+        }
+    }
+
+    private bool IsPartAllCorrect(int partIndex) {
+        var list = piecesByPart[partIndex];
+        for (int i = 0; i < list.Count; i++) {
+            if (!list[i].IsCorrect())
+                return false;
+        }
+        return true;
+    }
+
+    private bool AllPartsSolved() {
+        for (int i = 0; i < partSolved.Length; i++) {
+            if (!partSolved[i])
+                return false;
+        }
+        return true;
+    }
+
+    private void ApplyPipePartLights() {
+        for (int i = 0; i < pipePartLights.Count; i++) {
+            var lt = pipePartLights[i];
+            if (lt == null)
+                continue;
+            lt.color = (i < partSolved.Length && partSolved[i]) ? Color.green : Color.red;
+            lt.enabled = true;
+        }
+    }
+
+    public bool IsPipePartSolved(int partIndex) {
+        if (partIndex < 0 || partIndex >= partSolved.Length)
+            return false;
+        return partSolved[partIndex];
     }
 
     private void CollectAndPrepareStreetLamps() {

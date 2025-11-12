@@ -31,7 +31,6 @@ public class LightOut : MonoBehaviour {
     public float neighborRippleDelay = 0.03f;
 
     [Header("Start Generation")]
-    [Tooltip("초기 켜짐 개수 범위(Always solvable 보장)")]
     public int minOnAtStart = 3;
     public int maxOnAtStart = 5;
     public int scrambleMovesMin = 8;
