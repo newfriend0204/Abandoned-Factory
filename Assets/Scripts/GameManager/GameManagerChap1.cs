@@ -62,6 +62,9 @@ public class GameManagerChap1 : MonoBehaviour {
     public AudioClip pipeSubmitFailSfx;
     [Range(0f, 1f)] public float pipeSubmitVolume = 1f;
 
+    [Header("Monologue")]
+    public MonologueManager monologue;
+
     private readonly Dictionary<int, List<PipePiece>> piecesByPart = new Dictionary<int, List<PipePiece>>();
     private readonly bool[] partSolved = new bool[3];
 
@@ -347,7 +350,7 @@ public class GameManagerChap1 : MonoBehaviour {
     }
 
     public void NorthEasternAreaHintAvailable() {
-        Debug.Log("힌트 사용 가능!");
+        monologue.ShowMessage("뭔가 답을 알 것 같은데.", monologue.defaultVisibleDuration, false);
     }
 
     private void InitializePipePuzzle() {

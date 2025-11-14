@@ -167,20 +167,66 @@ public class PlayerController : MonoBehaviour {
             postJumpIgnoreTimer -= Time.deltaTime;
             ignoreGroundNow = true;
         }
-        grounded = false; onTooSteep = false;
-        groundNormal = Vector3.up; slopeAngle = 0f;
-        if (!ignoreGroundNow && groundCheck != null) {
-            int cnt = Physics.OverlapSphereNonAlloc(
-                groundCheck.position, groundCheckRadius, _overlap, groundMask, QueryTriggerInteraction.Ignore
-            );
-            for (int i = 0; i < cnt; i++) {
-                var c = _overlap[i];
-                if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform))
-                    continue;
-                grounded = true;
-                break;
+
+        grounded = false;
+        onTooSteep = false;
+        groundNormal = Vector3.up;
+        slopeAngle = 0f;
+
+        if (!ignoreGroundNow) {
+            if (groundCheck != null) {
+                Vector3 center = groundCheck.position;
+                float radius = groundCheckRadius;
+                float halfHeight = 0.03f;
+
+                Vector3 p0 = center + Vector3.up * halfHeight;
+                Vector3 p1 = center + Vector3.down * halfHeight;
+
+                int cnt = Physics.OverlapCapsuleNonAlloc(
+                    p0,
+                    p1,
+                    radius,
+                    _overlap,
+                    groundMask,
+                    QueryTriggerInteraction.Ignore
+                );
+
+                for (int i = 0; i < cnt; i++) {
+                    var c = _overlap[i];
+                    if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform))
+                        continue;
+                    grounded = true;
+                    break;
+                }
+            } else if (capsule != null) {
+                float r = capsule.radius;
+                float bottomSphereY =
+                    transform.position.y + capsule.center.y - (capsule.height * 0.5f - r);
+
+                Vector3 bottomCenter = new Vector3(
+                    transform.position.x,
+                    bottomSphereY,
+                    transform.position.z
+                );
+
+                int cnt = Physics.OverlapSphereNonAlloc(
+                    bottomCenter,
+                    r * 0.95f,
+                    _overlap,
+                    groundMask,
+                    QueryTriggerInteraction.Ignore
+                );
+
+                for (int i = 0; i < cnt; i++) {
+                    var c = _overlap[i];
+                    if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform))
+                        continue;
+                    grounded = true;
+                    break;
+                }
             }
         }
+
         if (grounded) {
             float r = capsule ? capsule.radius : 0.5f;
             float skin = 0.02f;
@@ -199,7 +245,8 @@ public class PlayerController : MonoBehaviour {
             }
         }
 
-        nearWall = false; wallNormal = Vector3.zero;
+        nearWall = false;
+        wallNormal = Vector3.zero;
         float ix = Input.GetAxisRaw("Horizontal");
         float iz = Input.GetAxisRaw("Vertical");
         Vector3 wishDirForWall = (transform.right * ix + transform.forward * iz).normalized;
@@ -293,7 +340,8 @@ public class PlayerController : MonoBehaviour {
             if (jv.y < 0f) jv.y = 0f;
             jv.y = jumpVelocityY;
             rb.linearVelocity = jv;
-            grounded = false; onTooSteep = false;
+            grounded = false;
+            onTooSteep = false;
             rb.position += groundNormal * 0.01f;
             postJumpIgnoreTimer = postJumpIgnoreDuration;
             sinceJump = 0f;
