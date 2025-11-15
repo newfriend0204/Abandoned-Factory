@@ -93,6 +93,17 @@ public class PlayerController : MonoBehaviour {
     private static readonly int AnimSpeed = Animator.StringToHash("Speed");
     private static readonly int AnimSprinting = Animator.StringToHash("Sprinting");
 
+    [Header("Audio - Footsteps")]
+    public AudioSource footstepSource;
+    public List<AudioClip> footstepClips = new List<AudioClip>();
+    public float walkStepInterval = 0.5f;
+    public float runStepInterval = 0.32f;
+
+    [Header("Audio - Jump / Land")]
+    public AudioSource actionSource;
+    public AudioClip jumpClip;
+    public AudioClip landClip;
+
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private float pitch;
@@ -124,6 +135,15 @@ public class PlayerController : MonoBehaviour {
 
     private readonly Collider[] _overlap = new Collider[8];
 
+    private float footstepTimer;
+    private int lastFootstepIndex = -1;
+
+    // 발소리용: 직전 프레임에 스프린트 상태였는지
+    private bool wasSprintingForSteps;
+
+    // 점프 사운드: 이번 Space 입력에 대해 이미 재생했는지
+    private bool jumpSoundPlayed;
+
     private void Awake() {
         rb = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
@@ -138,6 +158,9 @@ public class PlayerController : MonoBehaviour {
         isExhausted = false;
         sprinting = false;
         timeSinceStoppedSprint = 999f;
+        footstepTimer = 0f;
+        wasSprintingForSteps = sprinting;
+        jumpSoundPlayed = false;
 
         if (lockCursor) {
             Cursor.lockState = CursorLockMode.Locked;
@@ -264,15 +287,21 @@ public class PlayerController : MonoBehaviour {
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space)) {
             lastJumpPressedTime = Time.time;
-        if (grounded)
+            jumpSoundPlayed = false;
+        }
+
+        if (grounded) {
             lastGroundedTime = Time.time;
+        }
+
         bool buffered = (Time.time - lastJumpPressedTime) <= jumpBuffer;
         bool coyote = grounded || (Time.time - lastGroundedTime) <= coyoteTime;
         bool pastStartup = (Time.time - gameStartTime) >= startupIgnoreJumpTime;
-        if (!jumpRequested && pastStartup && buffered && coyote)
+        if (!jumpRequested && pastStartup && buffered && coyote) {
             jumpRequested = true;
+        }
 
         float hzSpeed = new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude;
         float maxSpeed = moveSpeed * sprintMultiplier;
@@ -283,6 +312,7 @@ public class PlayerController : MonoBehaviour {
         bool wantsSprint = shiftHeld && hasMoveInput;
 
         UpdateSprintStamina(wantsSprint);
+        UpdateFootstepAudio(hzSpeed);
 
         handAnimator.SetFloat(AnimSpeed, speed01, 0.1f, Time.deltaTime);
         handAnimator.SetBool(AnimSprinting, sprinting);
@@ -337,7 +367,9 @@ public class PlayerController : MonoBehaviour {
 
         if (jumpRequested) {
             Vector3 jv = rb.linearVelocity;
-            if (jv.y < 0f) jv.y = 0f;
+            if (jv.y < 0f) {
+                jv.y = 0f;
+            }
             jv.y = jumpVelocityY;
             rb.linearVelocity = jv;
             grounded = false;
@@ -346,12 +378,15 @@ public class PlayerController : MonoBehaviour {
             postJumpIgnoreTimer = postJumpIgnoreDuration;
             sinceJump = 0f;
             jumpRequested = false;
+
+            PlayJumpSound();
         }
 
         float extraGravity = customGravityY - Physics.gravity.y;
         Vector3 gravityAccel = new Vector3(0f, extraGravity, 0f);
-        if (rb.linearVelocity.y < 0f)
+        if (rb.linearVelocity.y < 0f) {
             gravityAccel.y *= 2.2f;
+        }
         rb.AddForce(gravityAccel, ForceMode.Acceleration);
 
         if (grounded && !onTooSteep) {
@@ -371,14 +406,17 @@ public class PlayerController : MonoBehaviour {
             Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
             landingRollSign = Mathf.Sign(Mathf.Abs(velLocal.x) < 0.01f ? Random.Range(-1f, 1f) : velLocal.x);
             landingRollT = 1f;
+
+            PlayLandSound();
         }
         wasGrounded = grounded;
         yVelPrev = rb.linearVelocity.y;
 
         if (capsule != null && (groundMat != null || airMat != null)) {
             PhysicsMaterial targetMat = (grounded && !onTooSteep) ? groundMat : airMat;
-            if (capsule.material != targetMat)
+            if (capsule.material != targetMat) {
                 capsule.material = targetMat;
+            }
         }
     }
 
@@ -400,10 +438,11 @@ public class PlayerController : MonoBehaviour {
         float freq = moving ? (sprint ? headBobRunFreq : headBobWalkFreq) : 0f;
         float amp = moving ? (sprint ? headBobRunAmp : headBobWalkAmp) : 0f;
 
-        if (freq > 0f)
+        if (freq > 0f) {
             bobTimer += Time.deltaTime * freq;
-        else
+        } else {
             bobTimer = 0f;
+        }
 
         float bobOffset = amp * Mathf.Sin(bobTimer * Mathf.PI * 2f);
 
@@ -494,5 +533,55 @@ public class PlayerController : MonoBehaviour {
                 }
             }
         }
+    }
+
+    private void UpdateFootstepAudio(float hzSpeed) {
+        bool movingOnGround = grounded && !onTooSteep && hzSpeed > 0.1f;
+
+        if (movingOnGround) {
+            float interval = sprinting ? runStepInterval : walkStepInterval;
+
+            if (sprinting != wasSprintingForSteps) {
+                PlayFootstep();
+                footstepTimer = interval;
+                wasSprintingForSteps = sprinting;
+                return;
+            }
+
+            footstepTimer -= Time.deltaTime;
+            if (footstepTimer <= 0f) {
+                PlayFootstep();
+                footstepTimer = interval;
+            }
+        } else {
+            footstepTimer = 0f;
+            wasSprintingForSteps = sprinting;
+        }
+    }
+
+    private void PlayFootstep() {
+        int count = footstepClips.Count;
+        int index = Random.Range(0, count);
+
+        if (count > 1 && index == lastFootstepIndex) {
+            index = (index + 1) % count;
+        }
+
+        lastFootstepIndex = index;
+
+        footstepSource.PlayOneShot(footstepClips[index]);
+    }
+
+    private void PlayJumpSound() {
+        if (jumpSoundPlayed) {
+            return;
+        }
+
+        actionSource.PlayOneShot(jumpClip);
+        jumpSoundPlayed = true;
+    }
+
+    private void PlayLandSound() {
+        actionSource.PlayOneShot(landClip);
     }
 }
