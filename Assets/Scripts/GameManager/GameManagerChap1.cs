@@ -65,6 +65,9 @@ public class GameManagerChap1 : MonoBehaviour {
     [Header("Monologue")]
     public MonologueManager monologue;
 
+    [Header("Broadcast Announcer UI")]
+    public BroadcastAnnouncerUI announcer;
+
     private readonly Dictionary<int, List<PipePiece>> piecesByPart = new Dictionary<int, List<PipePiece>>();
     private readonly bool[] partSolved = new bool[3];
 
@@ -112,8 +115,10 @@ public class GameManagerChap1 : MonoBehaviour {
     }
 
     private void OnDisable() {
-        StopCoroutine(getAnimRoutine);
-        getAnimRoutine = null;
+        if (getAnimRoutine != null) {
+            StopCoroutine(getAnimRoutine);
+            getAnimRoutine = null;
+        }
         getVisible = false;
         getObject.SetActive(false);
     }
@@ -350,6 +355,7 @@ public class GameManagerChap1 : MonoBehaviour {
     }
 
     public void NorthEasternAreaHintAvailable() {
+        announcer.ShowBroadcast("주의: 서부 남쪽 구역에서 이상 신호 감지.");
         monologue.ShowMessage("뭔가 답을 알 것 같은데.", monologue.defaultVisibleDuration, false);
     }
 

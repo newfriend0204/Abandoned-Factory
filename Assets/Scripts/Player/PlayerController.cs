@@ -138,10 +138,7 @@ public class PlayerController : MonoBehaviour {
     private float footstepTimer;
     private int lastFootstepIndex = -1;
 
-    // 발소리용: 직전 프레임에 스프린트 상태였는지
     private bool wasSprintingForSteps;
-
-    // 점프 사운드: 이번 Space 입력에 대해 이미 재생했는지
     private bool jumpSoundPlayed;
 
     private void Awake() {
