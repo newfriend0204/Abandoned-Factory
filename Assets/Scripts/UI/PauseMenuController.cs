@@ -1,155 +1,203 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using UnityEngine.EventSystems;
 
 public class PauseMenuController : MonoBehaviour {
-    [Header("Root")]
-    public GameObject pauseRoot;
-    public CanvasGroup pauseCanvas;
-
-    [System.Serializable]
-    public class CommandRow {
-        public Button button;
-        public TextMeshProUGUI leftCursor;
-        public TextMeshProUGUI label;
-        public TextMeshProUGUI rightCursor;
-    }
-
-    [Header("Command Rows")]
-    public CommandRow resumeRow;
-    public CommandRow settingsRow;
-    public CommandRow checkpointRow;
-    public CommandRow quitRow;
-
     [Header("Roots")]
-    public GameObject terminalRoot;
-    public GameObject settingsRoot;
+    public GameObject pauseRoot;
+    public GameObject pauseScreenRoot;
+    public GameObject settingsScreenRoot;
 
-    [Header("Colors")]
-    public Color normalColor = new Color(0.2f, 0.8f, 0.2f, 1f);
-    public Color highlightColor = new Color(0.6f, 1f, 0.6f, 1f);
+    [Header("Setting Panels")]
+    public GameObject generalPanel;
+    public GameObject graphicsPanel;
+    public GameObject audioPanel;
+    public GameObject controlsPanel;
 
-    private bool isPaused = false;
+    [Header("Tab Buttons")]
+    public Button generalTabButton;
+    public Button graphicsTabButton;
+    public Button audioTabButton;
+    public Button controlsTabButton;
 
-    private enum CommandType { Resume, Settings, Checkpoint, Quit }
-    private CommandType current = CommandType.Resume;
+    bool isPaused = false;
 
     void Start() {
-        if (pauseRoot != null)
-            pauseRoot.SetActive(false);
+        Time.timeScale = 1f;
 
-        if (pauseCanvas != null)
-            pauseCanvas.alpha = 0f;
+        pauseRoot.SetActive(false);
+        pauseScreenRoot.SetActive(false);
+        settingsScreenRoot.SetActive(false);
 
-        if (resumeRow.button != null) resumeRow.button.onClick.AddListener(OnClickResume);
-        if (settingsRow.button != null) settingsRow.button.onClick.AddListener(OnClickSettings);
-        if (checkpointRow.button != null) checkpointRow.button.onClick.AddListener(OnClickCheckpoint);
-        if (quitRow.button != null) quitRow.button.onClick.AddListener(OnClickQuit);
-
-        UpdateCommandVisuals();
+        ShowGeneralPanel();
+        SetActiveTab(generalTabButton);
     }
 
     void Update() {
-        if (Input.GetKeyDown(KeyCode.Escape)) {
-            if (!isPaused) {
-                ShowPauseMenu();
-            } else {
-                if (settingsRoot != null && settingsRoot.activeSelf) {
-                    settingsRoot.SetActive(false);
-                    terminalRoot.SetActive(true);
-                } else {
-                    HidePauseMenu();
-                }
-            }
+        if (Input.GetKeyDown(KeyCode.Escape))
+            OnPressEscape();
+    }
+
+    public void ToggleColor() {
+        GameObject go = EventSystem.current.currentSelectedGameObject;
+        Button button = go.GetComponent<Button>();
+
+        ColorBlock colors = button.colors;
+        Color normal = colors.normalColor;
+        Color selected = colors.selectedColor;
+
+        float aNormal = normal.a;
+        float aSelected = selected.a;
+
+        if (normal.r < 0.5f && normal.g > 0.5f && normal.b < 0.5f) {
+            normal = new Color(1f, 1f, 1f, aNormal);
+            selected = new Color(1f, 1f, 1f, aSelected);
+        } else {
+            normal = new Color(0f, 1f, 0f, aNormal);
+            selected = new Color(0f, 1f, 0f, aSelected);
+        }
+
+        colors.normalColor = normal;
+        colors.selectedColor = selected;
+        button.colors = colors;
+    }
+
+    void OnPressEscape() {
+        if (!isPaused)
+            TogglePause();
+        else {
+            if (settingsScreenRoot.activeSelf)
+                OnClickBack();
+            else
+                TogglePause();
         }
     }
 
-    public void ShowPauseMenu() {
+    void TogglePause() {
+        if (isPaused)
+            ResumeGame();
+        else
+            PauseGame();
+    }
+
+    void PauseGame() {
         isPaused = true;
-
-        if (pauseRoot != null)
-            pauseRoot.SetActive(true);
-
-        if (pauseCanvas != null)
-            pauseCanvas.alpha = 1f;
-
-        if (terminalRoot != null) terminalRoot.SetActive(true);
-        if (settingsRoot != null) settingsRoot.SetActive(false);
-
         Time.timeScale = 0f;
 
-        current = CommandType.Resume;
-        UpdateCommandVisuals();
+        pauseRoot.SetActive(true);
+        pauseScreenRoot.SetActive(true);
+        settingsScreenRoot.SetActive(false);
     }
 
-    public void HidePauseMenu() {
+    void ResumeGame() {
         isPaused = false;
-
-        if (pauseCanvas != null)
-            pauseCanvas.alpha = 0f;
-
-        if (pauseRoot != null)
-            pauseRoot.SetActive(false);
-
         Time.timeScale = 1f;
+
+        pauseRoot.SetActive(false);
+        pauseScreenRoot.SetActive(false);
+        settingsScreenRoot.SetActive(false);
     }
 
-    private void UpdateCommandVisuals() {
-        UpdateRow(resumeRow, current == CommandType.Resume);
-        UpdateRow(settingsRow, current == CommandType.Settings);
-        UpdateRow(checkpointRow, current == CommandType.Checkpoint);
-        UpdateRow(quitRow, current == CommandType.Quit);
-    }
-
-    private void UpdateRow(CommandRow row, bool selected) {
-        if (row == null) return;
-
-        if (row.leftCursor != null)
-            row.leftCursor.text = selected ? ">" : " ";
-
-        if (row.rightCursor != null)
-            row.rightCursor.text = selected ? "<" : " ";
-
-        if (row.label != null)
-            row.label.color = selected ? highlightColor : normalColor;
-    }
-
-    private void SetCurrent(CommandType cmd) {
-        current = cmd;
-        UpdateCommandVisuals();
-    }
-
-
-    public void OnHoverResume() => SetCurrent(CommandType.Resume);
-    public void OnHoverSettings() => SetCurrent(CommandType.Settings);
-    public void OnHoverCheckpoint() => SetCurrent(CommandType.Checkpoint);
-    public void OnHoverQuit() => SetCurrent(CommandType.Quit);
-
-
-    public void OnClickResume() {
-        Debug.Log("Resume clicked");
-        HidePauseMenu();
+    public void OnClickContinue() {
+        Debug.Log("[PauseMenu] Continue button pressed");
+        ResumeGame();
     }
 
     public void OnClickSettings() {
-        Debug.Log("Settings clicked");
+        pauseScreenRoot.SetActive(false);
+        settingsScreenRoot.SetActive(true);
 
-        terminalRoot.SetActive(false);
-        settingsRoot.SetActive(true);
+        ShowGeneralPanel();
+        SetActiveTab(generalTabButton);
     }
 
     public void OnClickCheckpoint() {
-        Debug.Log("Load Last Checkpoint clicked");
-        // 나중에 체크포인트 로드 구현
+        Debug.Log("[PauseMenu] Checkpoint button pressed");
     }
 
     public void OnClickQuit() {
-        Debug.Log("Quit clicked");
-        // 나중에 메인메뉴로 이동 구현
+        Debug.Log("[PauseMenu] Quit button pressed");
     }
 
-    public void OnClickSettingsBack() {
-        settingsRoot.SetActive(false);
-        terminalRoot.SetActive(true);
+    public void OnClickBack() {
+        Debug.Log("[Settings] Back button pressed");
+
+        settingsScreenRoot.SetActive(false);
+        pauseScreenRoot.SetActive(true);
+    }
+
+    public void OnClickSave() {
+        Debug.Log("[Settings] Save button pressed");
+    }
+
+    public void OnClickTabGeneral() {
+        Debug.Log("[Settings] Tab: General");
+        ShowGeneralPanel();
+        SetActiveTab(generalTabButton);
+    }
+
+    public void OnClickTabGraphics() {
+        Debug.Log("[Settings] Tab: Graphics");
+        generalPanel.SetActive(false);
+        graphicsPanel.SetActive(true);
+        audioPanel.SetActive(false);
+        controlsPanel.SetActive(false);
+
+        SetActiveTab(graphicsTabButton);
+    }
+
+    public void OnClickTabAudio() {
+        Debug.Log("[Settings] Tab: Audio");
+        generalPanel.SetActive(false);
+        graphicsPanel.SetActive(false);
+        audioPanel.SetActive(true);
+        controlsPanel.SetActive(false);
+
+        SetActiveTab(audioTabButton);
+    }
+
+    public void OnClickTabControls() {
+        Debug.Log("[Settings] Tab: Controls");
+        generalPanel.SetActive(false);
+        graphicsPanel.SetActive(false);
+        audioPanel.SetActive(false);
+        controlsPanel.SetActive(true);
+
+        SetActiveTab(controlsTabButton);
+    }
+
+    void ShowGeneralPanel() {
+        generalPanel.SetActive(true);
+        graphicsPanel.SetActive(false);
+        audioPanel.SetActive(false);
+        controlsPanel.SetActive(false);
+    }
+
+    void SetActiveTab(Button activeButton) {
+        SetTabButtonColors(generalTabButton, activeButton == generalTabButton);
+        SetTabButtonColors(graphicsTabButton, activeButton == graphicsTabButton);
+        SetTabButtonColors(audioTabButton, activeButton == audioTabButton);
+        SetTabButtonColors(controlsTabButton, activeButton == controlsTabButton);
+    }
+
+    void SetTabButtonColors(Button button, bool isActive) {
+        ColorBlock colors = button.colors;
+        Color normal = colors.normalColor;
+        Color selected = colors.selectedColor;
+
+        float aNormal = normal.a;
+        float aSelected = selected.a;
+
+        if (isActive) {
+            normal = new Color(1f, 1f, 1f, aNormal);
+            selected = new Color(1f, 1f, 1f, aSelected);
+        } else {
+            normal = new Color(0f, 1f, 0f, aNormal);
+            selected = new Color(0f, 1f, 0f, aSelected);
+        }
+
+        colors.normalColor = normal;
+        colors.selectedColor = selected;
+        button.colors = colors;
     }
 }
