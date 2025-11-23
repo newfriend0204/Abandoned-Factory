@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class PauseMenuController : MonoBehaviour {
     [Header("Roots")]
@@ -20,7 +21,17 @@ public class PauseMenuController : MonoBehaviour {
     public Button audioTabButton;
     public Button controlsTabButton;
 
+    [Header("Input Settings")]
+    public InputSettingsManager inputSettingsManager;
+
+    [Header("Summary UI")]
+    public TextMeshProUGUI summaryText;
+    [TextArea]
+    public string defaultSummaryText = "";
+
     bool isPaused = false;
+
+    bool hasUnsavedChanges = false;
 
     void Start() {
         Time.timeScale = 1f;
@@ -31,6 +42,8 @@ public class PauseMenuController : MonoBehaviour {
 
         ShowGeneralPanel();
         SetActiveTab(generalTabButton);
+
+        ClearSummary();
     }
 
     void Update() {
@@ -38,31 +51,29 @@ public class PauseMenuController : MonoBehaviour {
             OnPressEscape();
     }
 
-    public void ToggleColor() {
-        GameObject go = EventSystem.current.currentSelectedGameObject;
-        Button button = go.GetComponent<Button>();
+    public void MarkSettingChanged() {
+        hasUnsavedChanges = true;
+        Debug.Log("[Settings] 변경 사항 감지됨");
+    }
 
-        ColorBlock colors = button.colors;
-        Color normal = colors.normalColor;
-        Color selected = colors.selectedColor;
+    public void ShowSummary(string text) {
+        if (summaryText == null)
+            return;
 
-        float aNormal = normal.a;
-        float aSelected = selected.a;
+        summaryText.text = text;
+    }
 
-        if (normal.r < 0.5f && normal.g > 0.5f && normal.b < 0.5f) {
-            normal = new Color(1f, 1f, 1f, aNormal);
-            selected = new Color(1f, 1f, 1f, aSelected);
-        } else {
-            normal = new Color(0f, 1f, 0f, aNormal);
-            selected = new Color(0f, 1f, 0f, aSelected);
-        }
+    public void ClearSummary() {
+        if (summaryText == null)
+            return;
 
-        colors.normalColor = normal;
-        colors.selectedColor = selected;
-        button.colors = colors;
+        summaryText.text = defaultSummaryText;
     }
 
     void OnPressEscape() {
+        if (isPaused && inputSettingsManager != null && inputSettingsManager.IsPopupOpen)
+            return;
+
         if (!isPaused)
             TogglePause();
         else {
@@ -109,6 +120,9 @@ public class PauseMenuController : MonoBehaviour {
 
         ShowGeneralPanel();
         SetActiveTab(generalTabButton);
+
+        hasUnsavedChanges = false;
+        ClearSummary();
     }
 
     public void OnClickCheckpoint() {
@@ -127,13 +141,15 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     public void OnClickSave() {
-        Debug.Log("[Settings] Save button pressed");
+        Debug.Log("[Settings] Save button pressed (txt 저장은 나중에)");
+        hasUnsavedChanges = false;
     }
 
     public void OnClickTabGeneral() {
         Debug.Log("[Settings] Tab: General");
         ShowGeneralPanel();
         SetActiveTab(generalTabButton);
+        ClearSummary();
     }
 
     public void OnClickTabGraphics() {
@@ -144,6 +160,7 @@ public class PauseMenuController : MonoBehaviour {
         controlsPanel.SetActive(false);
 
         SetActiveTab(graphicsTabButton);
+        ClearSummary();
     }
 
     public void OnClickTabAudio() {
@@ -154,6 +171,7 @@ public class PauseMenuController : MonoBehaviour {
         controlsPanel.SetActive(false);
 
         SetActiveTab(audioTabButton);
+        ClearSummary();
     }
 
     public void OnClickTabControls() {
@@ -164,6 +182,7 @@ public class PauseMenuController : MonoBehaviour {
         controlsPanel.SetActive(true);
 
         SetActiveTab(controlsTabButton);
+        ClearSummary();
     }
 
     void ShowGeneralPanel() {
@@ -189,6 +208,30 @@ public class PauseMenuController : MonoBehaviour {
         float aSelected = selected.a;
 
         if (isActive) {
+            normal = new Color(1f, 1f, 1f, aNormal);
+            selected = new Color(1f, 1f, 1f, aSelected);
+        } else {
+            normal = new Color(0f, 1f, 0f, aNormal);
+            selected = new Color(0f, 1f, 0f, aSelected);
+        }
+
+        colors.normalColor = normal;
+        colors.selectedColor = selected;
+        button.colors = colors;
+    }
+
+    public void ToggleColor() {
+        GameObject go = EventSystem.current.currentSelectedGameObject;
+        Button button = go.GetComponent<Button>();
+
+        ColorBlock colors = button.colors;
+        Color normal = colors.normalColor;
+        Color selected = colors.selectedColor;
+
+        float aNormal = normal.a;
+        float aSelected = selected.a;
+
+        if (normal.r < 0.5f && normal.g > 0.5f && normal.b < 0.5f) {
             normal = new Color(1f, 1f, 1f, aNormal);
             selected = new Color(1f, 1f, 1f, aSelected);
         } else {
