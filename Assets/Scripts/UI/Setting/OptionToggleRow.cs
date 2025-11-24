@@ -4,6 +4,9 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 public class OptionToggleRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
+    [Header("IDs")]
+    public string actionId;
+
     [Header("UI")]
     public TextMeshProUGUI labelText;
     public Button[] optionButtons;
