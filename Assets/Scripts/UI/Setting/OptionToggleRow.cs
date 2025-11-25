@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 public class OptionToggleRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
-    [Header("IDs")]
+    [Header("ID")]
     public string actionId;
 
     [Header("UI")]
@@ -17,34 +17,48 @@ public class OptionToggleRow : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     [Header("Summary")]
     [TextArea]
-    public string summaryText;
+    public string summaryTextForRow;
 
     PauseMenuController pauseMenu;
 
     void Awake() {
         pauseMenu = FindFirstObjectByType<PauseMenuController>();
+
+        if (!string.IsNullOrEmpty(actionId) && SettingsManager.Instance != null) {
+            int loadedIndex = SettingsManager.Instance.GetInt(actionId, selectedIndex);
+            selectedIndex = loadedIndex;
+        }
+
         ApplyVisual();
     }
 
     public void OnClickOption(int index) {
-        if (index < 0 || index >= optionButtons.Length)
+        if (index < 0 || index >= optionButtons.Length) {
             return;
+        }
 
-        if (selectedIndex == index)
+        if (selectedIndex == index) {
             return;
+        }
 
         selectedIndex = index;
         ApplyVisual();
 
-        if (pauseMenu != null)
+        if (!string.IsNullOrEmpty(actionId) && SettingsManager.Instance != null) {
+            SettingsManager.Instance.SetInt(actionId, selectedIndex);
+        }
+
+        if (pauseMenu != null) {
             pauseMenu.MarkSettingChanged();
+        }
     }
 
     void ApplyVisual() {
         for (int i = 0; i < optionButtons.Length; i++) {
             Button btn = optionButtons[i];
-            if (btn == null)
+            if (btn == null) {
                 continue;
+            }
 
             ColorBlock colors = btn.colors;
             Color normal = colors.normalColor;
@@ -68,14 +82,20 @@ public class OptionToggleRow : MonoBehaviour, IPointerEnterHandler, IPointerExit
     }
 
     public void SetSelectedIndex(int index, bool notifyChange = false) {
-        if (index < 0 || index >= optionButtons.Length)
+        if (index < 0 || index >= optionButtons.Length) {
             index = 0;
+        }
 
         selectedIndex = index;
         ApplyVisual();
 
-        if (notifyChange && pauseMenu != null)
+        if (!string.IsNullOrEmpty(actionId) && SettingsManager.Instance != null) {
+            SettingsManager.Instance.SetInt(actionId, selectedIndex);
+        }
+
+        if (notifyChange && pauseMenu != null) {
             pauseMenu.MarkSettingChanged();
+        }
     }
 
     public int GetSelectedIndex() {
@@ -83,12 +103,14 @@ public class OptionToggleRow : MonoBehaviour, IPointerEnterHandler, IPointerExit
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (pauseMenu != null && !string.IsNullOrEmpty(summaryText))
-            pauseMenu.ShowSummary(summaryText);
+        if (pauseMenu != null && !string.IsNullOrEmpty(summaryTextForRow)) {
+            pauseMenu.ShowSummary(summaryTextForRow);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (pauseMenu != null)
+        if (pauseMenu != null) {
             pauseMenu.ClearSummary();
+        }
     }
 }

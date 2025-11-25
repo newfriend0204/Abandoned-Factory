@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using TMPro;
 
 public class InputSettingsManager : MonoBehaviour {
-    // -------------------------
-    // 내부용 키 바인딩 데이터
-    // -------------------------
     [Serializable]
     public class KeyBinding {
-        public string actionId;     // 저장용 ID (예: "MoveForward")
-        public KeyCode primary;     // Key1
-        public KeyCode secondary;   // Key2
+        public string actionId;
+        public KeyCode primary;
+        public KeyCode secondary;
     }
 
     [Header("Key Bindings")]
@@ -29,16 +27,18 @@ public class InputSettingsManager : MonoBehaviour {
     public float logVisibleDuration = 4f;
     public float logFadeDuration = 1f;
 
-    readonly Dictionary<string, KeybindRow> rowByActionId =
-        new Dictionary<string, KeybindRow>();
+    [Header("Save")]
+    public string keyBindingFileName = "keybindings.txt";
+
+    string keyBindingFilePath;
+
+    readonly Dictionary<string, KeybindRow> rowByActionId = new Dictionary<string, KeybindRow>();
 
     bool isListening = false;
     string listeningActionId = null;
     int listeningSlotIndex = -1;
 
     float logTimer = 0f;
-
-    PauseMenuController pauseMenu;
 
     public bool IsPopupOpen {
         get {
@@ -47,7 +47,34 @@ public class InputSettingsManager : MonoBehaviour {
     }
 
     void Awake() {
-        pauseMenu = FindFirstObjectByType<PauseMenuController>();
+        keyBindingFilePath = Path.Combine(Application.persistentDataPath, keyBindingFileName);
+
+        BuildDefaultBindings();
+        LoadKeyBindingsFromFile();
+    }
+
+    void BuildDefaultBindings() {
+        EnsureBinding("MoveForward", KeyCode.W);
+        EnsureBinding("MoveBackward", KeyCode.S);
+        EnsureBinding("MoveLeft", KeyCode.A);
+        EnsureBinding("MoveRight", KeyCode.D);
+        EnsureBinding("Run", KeyCode.LeftShift);
+        EnsureBinding("Jump", KeyCode.Space);
+        EnsureBinding("Interact", KeyCode.F);
+        EnsureBinding("ToggleFlashlight", KeyCode.R);
+        EnsureBinding("ShowHint", KeyCode.H);
+        EnsureBinding("ShowSolution", KeyCode.G);
+    }
+
+    void EnsureBinding(string actionId, KeyCode defaultPrimary) {
+        KeyBinding binding = GetBinding(actionId);
+        if (binding == null) {
+            binding = new KeyBinding();
+            binding.actionId = actionId;
+            binding.primary = defaultPrimary;
+            binding.secondary = KeyCode.None;
+            keyBindings.Add(binding);
+        }
     }
 
     void Update() {
@@ -78,8 +105,9 @@ public class InputSettingsManager : MonoBehaviour {
 
     KeyBinding GetBinding(string actionId) {
         for (int i = 0; i < keyBindings.Count; i++) {
-            if (keyBindings[i].actionId == actionId)
-                return keyBindings[i];
+            KeyBinding b = keyBindings[i];
+            if (b != null && b.actionId == actionId)
+                return b;
         }
         return null;
     }
@@ -89,15 +117,18 @@ public class InputSettingsManager : MonoBehaviour {
         if (binding == null)
             return;
 
-        if (rowByActionId.TryGetValue(actionId, out KeybindRow row) && row != null) {
+        KeybindRow row;
+        if (rowByActionId.TryGetValue(actionId, out row) && row != null) {
             row.RefreshDisplay(binding.primary, binding.secondary, this);
         }
     }
 
     string GetLabelForAction(string actionId) {
-        if (rowByActionId.TryGetValue(actionId, out KeybindRow row) && row != null && row.labelText != null)
-            return row.labelText.text;
-
+        KeybindRow row;
+        if (rowByActionId.TryGetValue(actionId, out row) && row != null) {
+            if (row.labelText != null)
+                return row.labelText.text;
+        }
         return actionId;
     }
 
@@ -105,27 +136,26 @@ public class InputSettingsManager : MonoBehaviour {
         if (key == KeyCode.None)
             return "(비어있음)";
 
-        switch (key) {
-            case KeyCode.Mouse0:
-                return "Mouse Left";
-            case KeyCode.Mouse1:
-                return "Mouse Right";
-            case KeyCode.Mouse2:
-                return "Mouse Middle";
-        }
+        if (key == KeyCode.Mouse0) return "Mouse L";
+        if (key == KeyCode.Mouse1) return "Mouse R";
+        if (key == KeyCode.Mouse2) return "Mouse M";
 
         string name = key.ToString();
 
-        if (name.Length == 1 && char.IsLetter(name[0])) {
-            return name.ToUpperInvariant();
-        }
+        if (name.Length == 1)
+            return name.ToUpper();
 
-        if (name.StartsWith("Left")) {
+        if (name.StartsWith("Alpha"))
+            return name.Substring("Alpha".Length);
+
+        if (name.StartsWith("Keypad"))
+            return "Num" + name.Substring("Keypad".Length);
+
+        if (name.StartsWith("Left"))
             return "L" + name.Substring("Left".Length);
-        }
-        if (name.StartsWith("Right")) {
+
+        if (name.StartsWith("Right"))
             return "R" + name.Substring("Right".Length);
-        }
 
         return name;
     }
@@ -145,132 +175,116 @@ public class InputSettingsManager : MonoBehaviour {
         listeningSlotIndex = slotIndex;
         isListening = true;
 
-        if (keySummaryText != null) {
-            string summary = GetLabelForAction(actionId);
-            keySummaryText.text = summary;
-        }
-
-        if (currentKeyText != null) {
-            KeyCode currentKey = (slotIndex == 0) ? binding.primary : binding.secondary;
-            currentKeyText.text = FormatKeyName(currentKey);
-        }
-
         if (switchKeyScreenRoot != null)
             switchKeyScreenRoot.SetActive(true);
+
+        string label = GetLabelForAction(actionId);
+        if (keySummaryText != null)
+            keySummaryText.text = label;
+
+        KeyCode currentKey = slotIndex == 0 ? binding.primary : binding.secondary;
+        if (currentKeyText != null)
+            currentKeyText.text = FormatKeyName(currentKey);
     }
 
-    void EndListening(bool closePopup) {
+    void StopListening() {
         isListening = false;
         listeningActionId = null;
         listeningSlotIndex = -1;
 
-        if (closePopup && switchKeyScreenRoot != null)
+        if (switchKeyScreenRoot != null)
             switchKeyScreenRoot.SetActive(false);
     }
 
     void ListenKeyInput() {
         if (Input.GetKeyDown(KeyCode.Escape)) {
-            EndListening(true);
+            StopListening();
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) {
-            ApplyNewKey(KeyCode.None);
+        if (Input.GetKeyDown(KeyCode.Delete)) {
+            ApplyNewKey(listeningActionId, listeningSlotIndex, KeyCode.None);
+            StopListening();
             return;
         }
-
-        if (!Input.anyKeyDown)
-            return;
 
         foreach (KeyCode key in Enum.GetValues(typeof(KeyCode))) {
             if (Input.GetKeyDown(key)) {
-                ApplyNewKey(key);
-                break;
+                ApplyNewKey(listeningActionId, listeningSlotIndex, key);
+                StopListening();
+                return;
             }
         }
     }
 
-    void ApplyNewKey(KeyCode newKey) {
-        if (string.IsNullOrEmpty(listeningActionId))
+    void ApplyNewKey(string actionId, int slotIndex, KeyCode newKey) {
+        if (string.IsNullOrEmpty(actionId))
             return;
 
-        KeyBinding targetBinding = GetBinding(listeningActionId);
-        if (targetBinding == null)
+        KeyBinding target = GetBinding(actionId);
+        if (target == null)
             return;
 
-        if (newKey == KeyCode.None) {
-            if (listeningSlotIndex == 0)
-                targetBinding.primary = KeyCode.None;
-            else
-                targetBinding.secondary = KeyCode.None;
-
-            RefreshRow(listeningActionId);
-
-            if (pauseMenu != null)
-                pauseMenu.MarkSettingChanged();
-
-            EndListening(true);
-            return;
-        }
-
-        HashSet<string> changedActions = new HashSet<string>();
-        string removedFromOtherActionId = null;
-
-        for (int i = 0; i < keyBindings.Count; i++) {
-            KeyBinding kb = keyBindings[i];
-
-            if (kb.primary == newKey) {
-                kb.primary = KeyCode.None;
-                changedActions.Add(kb.actionId);
-
-                if (removedFromOtherActionId == null && kb.actionId != listeningActionId)
-                    removedFromOtherActionId = kb.actionId;
-            }
-
-            if (kb.secondary == newKey) {
-                kb.secondary = KeyCode.None;
-                changedActions.Add(kb.actionId);
-
-                if (removedFromOtherActionId == null && kb.actionId != listeningActionId)
-                    removedFromOtherActionId = kb.actionId;
-            }
-        }
-
-        if (listeningSlotIndex == 0)
-            targetBinding.primary = newKey;
-        else
-            targetBinding.secondary = newKey;
-
-        changedActions.Add(listeningActionId);
-
-        foreach (string actionId in changedActions)
+        if (slotIndex == 0 && target.primary == newKey && newKey != KeyCode.None) {
             RefreshRow(actionId);
+            return;
+        }
+        if (slotIndex == 1 && target.secondary == newKey && newKey != KeyCode.None) {
+            RefreshRow(actionId);
+            return;
+        }
 
-        if (removedFromOtherActionId != null && switchKeyLogText != null && switchKeyLogRoot != null) {
+        string movedFromAction = null;
+        KeyCode conflictOldKey = KeyCode.None;
+
+        if (newKey != KeyCode.None) {
+            for (int i = 0; i < keyBindings.Count; i++) {
+                KeyBinding other = keyBindings[i];
+                if (other == null || other.actionId == actionId)
+                    continue;
+
+                if (other.primary == newKey) {
+                    other.primary = KeyCode.None;
+                    movedFromAction = other.actionId;
+                    conflictOldKey = newKey;
+                    RefreshRow(other.actionId);
+                    break;
+                }
+
+                if (other.secondary == newKey) {
+                    other.secondary = KeyCode.None;
+                    movedFromAction = other.actionId;
+                    conflictOldKey = newKey;
+                    RefreshRow(other.actionId);
+                    break;
+                }
+            }
+        }
+
+        if (slotIndex == 0)
+            target.primary = newKey;
+        else if (slotIndex == 1)
+            target.secondary = newKey;
+
+        RefreshRow(actionId);
+
+        if (!string.IsNullOrEmpty(movedFromAction) && newKey != KeyCode.None) {
+            string fromLabel = GetLabelForAction(movedFromAction);
+            string toLabel = GetLabelForAction(actionId);
             string keyName = FormatKeyName(newKey);
-            string fromLabel = GetLabelForAction(removedFromOtherActionId);
-            string toLabel = GetLabelForAction(targetBinding.actionId);
 
-            string msg = $"\"{fromLabel}\"에 배치되어있던 \"{keyName}\"(이)가 \"{toLabel}\"로 이동됨.";
+            string msg = $"\"{fromLabel}\"에 배치되어 있던 \"{keyName}\"(이)가 \"{toLabel}\"로 이동됨.";
             ShowLog(msg);
         }
-
-        if (pauseMenu != null)
-            pauseMenu.MarkSettingChanged();
-
-        EndListening(true);
     }
 
     void ShowLog(string message) {
-        if (switchKeyLogText != null)
-            switchKeyLogText.text = message;
+        if (switchKeyLogRoot == null || switchKeyLogCanvasGroup == null || switchKeyLogText == null)
+            return;
 
-        if (switchKeyLogCanvasGroup != null)
-            switchKeyLogCanvasGroup.alpha = 1f;
-
-        if (switchKeyLogRoot != null)
-            switchKeyLogRoot.SetActive(true);
-
+        switchKeyLogRoot.SetActive(true);
+        switchKeyLogCanvasGroup.alpha = 1f;
+        switchKeyLogText.text = message;
         logTimer = logVisibleDuration + logFadeDuration;
     }
 
@@ -278,16 +292,17 @@ public class InputSettingsManager : MonoBehaviour {
         if (switchKeyLogRoot == null || switchKeyLogCanvasGroup == null)
             return;
 
-        if (!switchKeyLogRoot.activeSelf)
-            return;
-
-        if (logTimer <= 0f)
-            return;
-
-        logTimer -= Time.unscaledDeltaTime;
         if (logTimer <= 0f) {
             switchKeyLogCanvasGroup.alpha = 0f;
             switchKeyLogRoot.SetActive(false);
+            return;
+        }
+
+        logTimer -= Time.unscaledDeltaTime;
+
+        float visibleTime = logVisibleDuration;
+        if (logTimer > visibleTime + logFadeDuration) {
+            switchKeyLogCanvasGroup.alpha = 1f;
             return;
         }
 
@@ -296,6 +311,113 @@ public class InputSettingsManager : MonoBehaviour {
         } else {
             float t = logTimer / logFadeDuration;
             switchKeyLogCanvasGroup.alpha = t;
+        }
+    }
+
+    void LoadKeyBindingsFromFile() {
+        if (string.IsNullOrEmpty(keyBindingFilePath))
+            keyBindingFilePath = Path.Combine(Application.persistentDataPath, keyBindingFileName);
+
+        if (!File.Exists(keyBindingFilePath))
+            return;
+
+        try {
+            string[] lines = File.ReadAllLines(keyBindingFilePath);
+            for (int i = 0; i < lines.Length; i++) {
+                string line = lines[i];
+
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                int eq = line.IndexOf('=');
+                if (eq <= 0)
+                    continue;
+
+                string actionId = line.Substring(0, eq).Trim();
+                string rest = line.Substring(eq + 1).Trim();
+
+                string primaryStr = rest;
+                string secondaryStr = "None";
+
+                int comma = rest.IndexOf(',');
+                if (comma >= 0) {
+                    primaryStr = rest.Substring(0, comma).Trim();
+                    secondaryStr = rest.Substring(comma + 1).Trim();
+                }
+
+                KeyBinding binding = GetBinding(actionId);
+                if (binding == null) {
+                    binding = new KeyBinding();
+                    binding.actionId = actionId;
+                    keyBindings.Add(binding);
+                }
+
+                binding.primary = DeserializeKeyCode(primaryStr);
+                binding.secondary = DeserializeKeyCode(secondaryStr);
+            }
+        } catch (Exception e) {
+            Debug.LogError("[InputSettingsManager] Failed to read keybindings: " + e.Message);
+        }
+    }
+
+    public void ReloadKeyBindingsFromFileFully() {
+        keyBindings.Clear();
+        BuildDefaultBindings();
+        LoadKeyBindingsFromFile();
+
+        foreach (var kvp in rowByActionId) {
+            RefreshRow(kvp.Key);
+        }
+    }
+
+    public void SaveKeyBindingsToFile() {
+        if (string.IsNullOrEmpty(keyBindingFilePath))
+            keyBindingFilePath = Path.Combine(Application.persistentDataPath, keyBindingFileName);
+
+        try {
+            List<string> lines = new List<string>();
+            for (int i = 0; i < keyBindings.Count; i++) {
+                KeyBinding binding = keyBindings[i];
+                if (binding == null || string.IsNullOrEmpty(binding.actionId))
+                    continue;
+
+                string primaryStr = SerializeKeyCode(binding.primary);
+                string secondaryStr = SerializeKeyCode(binding.secondary);
+
+                string line = binding.actionId + "=" + primaryStr + "," + secondaryStr;
+                lines.Add(line);
+            }
+
+            File.WriteAllLines(keyBindingFilePath, lines.ToArray());
+        } catch (Exception e) {
+            Debug.LogError("[InputSettingsManager] Failed to write keybindings: " + e.Message);
+        }
+    }
+
+    string SerializeKeyCode(KeyCode key) {
+        if (key == KeyCode.None)
+            return "None";
+
+        return key.ToString();
+    }
+
+    KeyCode DeserializeKeyCode(string text) {
+        if (string.IsNullOrEmpty(text) || text == "None")
+            return KeyCode.None;
+
+        KeyCode key;
+        if (Enum.TryParse(text, out key))
+            return key;
+
+        return KeyCode.None;
+    }
+
+    public void ResetKeyBindingsToDefault() {
+        keyBindings.Clear();
+        BuildDefaultBindings();
+
+        foreach (var kvp in rowByActionId) {
+            RefreshRow(kvp.Key);
         }
     }
 }

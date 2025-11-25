@@ -4,68 +4,65 @@ using UnityEngine.EventSystems;
 using TMPro;
 
 public class KeybindRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
-    [Header("IDs")]
+    [Header("ID")]
     public string actionId;
 
-    [Header("Texts")]
+    [Header("UI")]
     public TextMeshProUGUI labelText;
-    public TextMeshProUGUI primaryKeyText;
-    public TextMeshProUGUI secondaryKeyText;
-
-    [Header("Buttons")]
-    public Button primaryButton;
-    public Button secondaryButton;
+    public TextMeshProUGUI key1Text;
+    public TextMeshProUGUI key2Text;
 
     [Header("Summary")]
     [TextArea]
-    public string summaryText;
+    public string summaryTextForRow;
 
-    InputSettingsManager manager;
+    InputSettingsManager inputSettingsManager;
     PauseMenuController pauseMenu;
 
     void Awake() {
-        if (primaryButton != null)
-            primaryButton.onClick.AddListener(OnClickPrimary);
-
-        if (secondaryButton != null)
-            secondaryButton.onClick.AddListener(OnClickSecondary);
-
+        inputSettingsManager = FindFirstObjectByType<InputSettingsManager>();
         pauseMenu = FindFirstObjectByType<PauseMenuController>();
+
+        if (inputSettingsManager != null) {
+            inputSettingsManager.RegisterRow(this);
+        }
     }
 
-    void Start() {
-        manager = FindFirstObjectByType<InputSettingsManager>();
-        if (manager != null)
-            manager.RegisterRow(this);
+    public void RefreshDisplay(KeyCode primary, KeyCode secondary, InputSettingsManager manager) {
+        if (key1Text != null) {
+            key1Text.text = manager.FormatKeyName(primary);
+        }
+
+        if (key2Text != null) {
+            key2Text.text = manager.FormatKeyName(secondary);
+        }
     }
 
-    public void RefreshDisplay(KeyCode primary, KeyCode secondary, InputSettingsManager mgr) {
-        manager = mgr;
+    public void OnClickKey1() {
+        if (inputSettingsManager == null || string.IsNullOrEmpty(actionId)) {
+            return;
+        }
 
-        if (primaryKeyText != null)
-            primaryKeyText.text = manager != null ? manager.FormatKeyName(primary) : primary.ToString();
-
-        if (secondaryKeyText != null)
-            secondaryKeyText.text = manager != null ? manager.FormatKeyName(secondary) : secondary.ToString();
+        inputSettingsManager.StartListeningKey(actionId, 0);
     }
 
-    void OnClickPrimary() {
-        if (manager != null)
-            manager.StartListeningKey(actionId, 0);
-    }
+    public void OnClickKey2() {
+        if (inputSettingsManager == null || string.IsNullOrEmpty(actionId)) {
+            return;
+        }
 
-    void OnClickSecondary() {
-        if (manager != null)
-            manager.StartListeningKey(actionId, 1);
+        inputSettingsManager.StartListeningKey(actionId, 1);
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (pauseMenu != null && !string.IsNullOrEmpty(summaryText))
-            pauseMenu.ShowSummary(summaryText);
+        if (pauseMenu != null && !string.IsNullOrEmpty(summaryTextForRow)) {
+            pauseMenu.ShowSummary(summaryTextForRow);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (pauseMenu != null)
+        if (pauseMenu != null) {
             pauseMenu.ClearSummary();
+        }
     }
 }

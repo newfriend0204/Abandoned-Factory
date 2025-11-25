@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
@@ -29,9 +30,13 @@ public class PauseMenuController : MonoBehaviour {
     [TextArea]
     public string defaultSummaryText = "";
 
-    bool isPaused = false;
+    [Header("Save Screen")]
+    public GameObject saveScreenRoot;
 
+    bool isPaused = false;
     bool hasUnsavedChanges = false;
+
+    Action pendingAction = null;
 
     void Start() {
         Time.timeScale = 1f;
@@ -39,6 +44,9 @@ public class PauseMenuController : MonoBehaviour {
         pauseRoot.SetActive(false);
         pauseScreenRoot.SetActive(false);
         settingsScreenRoot.SetActive(false);
+
+        if (saveScreenRoot != null)
+            saveScreenRoot.SetActive(false);
 
         ShowGeneralPanel();
         SetActiveTab(generalTabButton);
@@ -53,7 +61,6 @@ public class PauseMenuController : MonoBehaviour {
 
     public void MarkSettingChanged() {
         hasUnsavedChanges = true;
-        Debug.Log("[Settings] 변경 사항 감지됨");
     }
 
     public void ShowSummary(string text) {
@@ -74,13 +81,19 @@ public class PauseMenuController : MonoBehaviour {
         if (isPaused && inputSettingsManager != null && inputSettingsManager.IsPopupOpen)
             return;
 
-        if (!isPaused)
+        if (isPaused && saveScreenRoot != null && saveScreenRoot.activeSelf) {
+            OnClickSaveScreenCancel();
+            return;
+        }
+
+        if (!isPaused) {
             TogglePause();
-        else {
-            if (settingsScreenRoot.activeSelf)
-                OnClickBack();
-            else
+        } else {
+            if (settingsScreenRoot.activeSelf) {
+                RequestLeaveSettings();
+            } else {
                 TogglePause();
+            }
         }
     }
 
@@ -107,10 +120,14 @@ public class PauseMenuController : MonoBehaviour {
         pauseRoot.SetActive(false);
         pauseScreenRoot.SetActive(false);
         settingsScreenRoot.SetActive(false);
+
+        if (saveScreenRoot != null)
+            saveScreenRoot.SetActive(false);
+
+        pendingAction = null;
     }
 
     public void OnClickContinue() {
-        Debug.Log("[PauseMenu] Continue button pressed");
         ResumeGame();
     }
 
@@ -134,55 +151,79 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     public void OnClickBack() {
-        Debug.Log("[Settings] Back button pressed");
+        RequestLeaveSettings();
+    }
 
-        settingsScreenRoot.SetActive(false);
-        pauseScreenRoot.SetActive(true);
+    void RequestLeaveSettings() {
+        RequestActionWithSaveCheck(() => {
+            settingsScreenRoot.SetActive(false);
+            pauseScreenRoot.SetActive(true);
+        });
     }
 
     public void OnClickSave() {
-        Debug.Log("[Settings] Save button pressed (txt 저장은 나중에)");
+
+        if (SettingsManager.Instance != null)
+            SettingsManager.Instance.SaveToFile();
+
+        if (inputSettingsManager != null)
+            inputSettingsManager.SaveKeyBindingsToFile();
+
         hasUnsavedChanges = false;
     }
 
     public void OnClickTabGeneral() {
-        Debug.Log("[Settings] Tab: General");
-        ShowGeneralPanel();
-        SetActiveTab(generalTabButton);
-        ClearSummary();
+        RequestActionWithSaveCheck(() => {
+            ShowGeneralPanel();
+            SetActiveTab(generalTabButton);
+            ClearSummary();
+        });
     }
 
     public void OnClickTabGraphics() {
-        Debug.Log("[Settings] Tab: Graphics");
-        generalPanel.SetActive(false);
-        graphicsPanel.SetActive(true);
-        audioPanel.SetActive(false);
-        controlsPanel.SetActive(false);
+        RequestActionWithSaveCheck(() => {
+            generalPanel.SetActive(false);
+            graphicsPanel.SetActive(true);
+            audioPanel.SetActive(false);
+            controlsPanel.SetActive(false);
 
-        SetActiveTab(graphicsTabButton);
-        ClearSummary();
+            SetActiveTab(graphicsTabButton);
+            ClearSummary();
+        });
     }
 
     public void OnClickTabAudio() {
-        Debug.Log("[Settings] Tab: Audio");
-        generalPanel.SetActive(false);
-        graphicsPanel.SetActive(false);
-        audioPanel.SetActive(true);
-        controlsPanel.SetActive(false);
+        RequestActionWithSaveCheck(() => {
+            generalPanel.SetActive(false);
+            graphicsPanel.SetActive(false);
+            audioPanel.SetActive(true);
+            controlsPanel.SetActive(false);
 
-        SetActiveTab(audioTabButton);
-        ClearSummary();
+            SetActiveTab(audioTabButton);
+            ClearSummary();
+        });
     }
 
     public void OnClickTabControls() {
-        Debug.Log("[Settings] Tab: Controls");
-        generalPanel.SetActive(false);
-        graphicsPanel.SetActive(false);
-        audioPanel.SetActive(false);
-        controlsPanel.SetActive(true);
+        RequestActionWithSaveCheck(() => {
+            generalPanel.SetActive(false);
+            graphicsPanel.SetActive(false);
+            audioPanel.SetActive(false);
+            controlsPanel.SetActive(true);
 
-        SetActiveTab(controlsTabButton);
-        ClearSummary();
+            SetActiveTab(controlsTabButton);
+            ClearSummary();
+        });
+    }
+
+    void RequestActionWithSaveCheck(Action action) {
+        if (hasUnsavedChanges && saveScreenRoot != null) {
+            pendingAction = action;
+            saveScreenRoot.SetActive(true);
+        } else {
+            if (action != null)
+                action.Invoke();
+        }
     }
 
     void ShowGeneralPanel() {
@@ -242,5 +283,123 @@ public class PauseMenuController : MonoBehaviour {
         colors.normalColor = normal;
         colors.selectedColor = selected;
         button.colors = colors;
+    }
+
+    public void OnClickResetToDefaults() {
+        if (SettingsManager.Instance != null) {
+            SettingsManager.Instance.ResetToDefaults();
+        }
+
+        OptionSliderRow[] sliderRows = FindObjectsByType<OptionSliderRow>(FindObjectsSortMode.None);
+        for (int i = 0; i < sliderRows.Length; i++) {
+            OptionSliderRow row = sliderRows[i];
+            if (row == null || string.IsNullOrEmpty(row.actionId) || row.slider == null)
+                continue;
+
+            float defaultValue = row.slider.value;
+            float v = SettingsManager.Instance != null
+                ? SettingsManager.Instance.GetFloat(row.actionId, defaultValue)
+                : defaultValue;
+
+            row.SetValue(v, false);
+        }
+
+        OptionToggleRow[] toggleRows = FindObjectsByType<OptionToggleRow>(FindObjectsSortMode.None);
+        for (int i = 0; i < toggleRows.Length; i++) {
+            OptionToggleRow row = toggleRows[i];
+            if (row == null || string.IsNullOrEmpty(row.actionId))
+                continue;
+
+            int defaultIndex = row.selectedIndex;
+            int idx = SettingsManager.Instance != null
+                ? SettingsManager.Instance.GetInt(row.actionId, defaultIndex)
+                : defaultIndex;
+
+            row.SetSelectedIndex(idx, false);
+        }
+
+        if (inputSettingsManager != null) {
+            inputSettingsManager.ResetKeyBindingsToDefault();
+        }
+
+        MarkSettingChanged();
+    }
+
+    public void OnClickSaveScreenSaveAndExit() {
+        if (SettingsManager.Instance != null)
+            SettingsManager.Instance.SaveToFile();
+
+        if (inputSettingsManager != null)
+            inputSettingsManager.SaveKeyBindingsToFile();
+
+        hasUnsavedChanges = false;
+
+        if (saveScreenRoot != null)
+            saveScreenRoot.SetActive(false);
+
+        if (pendingAction != null) {
+            Action act = pendingAction;
+            pendingAction = null;
+            act.Invoke();
+        }
+    }
+
+    public void OnClickSaveScreenDontSaveAndExit() {
+        if (SettingsManager.Instance != null) {
+            SettingsManager.Instance.ReloadFromFile();
+        }
+
+        OptionSliderRow[] sliderRows = FindObjectsByType<OptionSliderRow>(FindObjectsSortMode.None);
+        for (int i = 0; i < sliderRows.Length; i++) {
+            OptionSliderRow row = sliderRows[i];
+            if (row == null || string.IsNullOrEmpty(row.actionId) || row.slider == null) {
+                continue;
+            }
+
+            float defaultValue = row.slider.value;
+            float v = SettingsManager.Instance != null
+                ? SettingsManager.Instance.GetFloat(row.actionId, defaultValue)
+                : defaultValue;
+
+            row.SetValue(v, false);
+        }
+
+        OptionToggleRow[] toggleRows = FindObjectsByType<OptionToggleRow>(FindObjectsSortMode.None);
+        for (int i = 0; i < toggleRows.Length; i++) {
+            OptionToggleRow row = toggleRows[i];
+            if (row == null || string.IsNullOrEmpty(row.actionId)) {
+                continue;
+            }
+
+            int defaultIndex = row.selectedIndex;
+            int idx = SettingsManager.Instance != null
+                ? SettingsManager.Instance.GetInt(row.actionId, defaultIndex)
+                : defaultIndex;
+
+            row.SetSelectedIndex(idx, false);
+        }
+
+        if (inputSettingsManager != null) {
+            inputSettingsManager.ReloadKeyBindingsFromFileFully();
+        }
+
+        hasUnsavedChanges = false;
+
+        if (saveScreenRoot != null) {
+            saveScreenRoot.SetActive(false);
+        }
+
+        if (pendingAction != null) {
+            Action act = pendingAction;
+            pendingAction = null;
+            act.Invoke();
+        }
+    }
+
+    public void OnClickSaveScreenCancel() {
+        if (saveScreenRoot != null)
+            saveScreenRoot.SetActive(false);
+
+        pendingAction = null;
     }
 }
