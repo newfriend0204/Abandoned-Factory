@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using UnityEngine.Localization;
 
 public class OptionSliderRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
     [Header("ID")]
@@ -17,8 +18,7 @@ public class OptionSliderRow : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public int decimalPlaces = 1;
 
     [Header("Summary")]
-    [TextArea]
-    public string summaryTextForRow;
+    public LocalizedString summaryTextForRow;
 
     PauseMenuController pauseMenu;
     bool isInitialized = false;
@@ -89,8 +89,8 @@ public class OptionSliderRow : MonoBehaviour, IPointerEnterHandler, IPointerExit
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (pauseMenu != null && !string.IsNullOrEmpty(summaryTextForRow)) {
-            pauseMenu.ShowSummary(summaryTextForRow);
+        if (pauseMenu != null && !string.IsNullOrEmpty(summaryTextForRow.GetLocalizedString())) {
+            pauseMenu.ShowSummary(summaryTextForRow.GetLocalizedString());
         }
     }
 

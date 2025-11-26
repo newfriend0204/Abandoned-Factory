@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using UnityEngine.Localization;
 
 public class KeybindRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
     [Header("ID")]
@@ -13,8 +14,7 @@ public class KeybindRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public TextMeshProUGUI key2Text;
 
     [Header("Summary")]
-    [TextArea]
-    public string summaryTextForRow;
+    public LocalizedString summaryTextForRow;
 
     InputSettingsManager inputSettingsManager;
     PauseMenuController pauseMenu;
@@ -55,8 +55,8 @@ public class KeybindRow : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (pauseMenu != null && !string.IsNullOrEmpty(summaryTextForRow)) {
-            pauseMenu.ShowSummary(summaryTextForRow);
+        if (pauseMenu != null && !string.IsNullOrEmpty(summaryTextForRow.GetLocalizedString())) {
+            pauseMenu.ShowSummary(summaryTextForRow.GetLocalizedString());
         }
     }
 

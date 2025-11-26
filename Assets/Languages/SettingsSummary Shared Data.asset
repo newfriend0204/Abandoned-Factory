@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: SettingsSummary Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: SettingsSummary
+  m_TableCollectionNameGuidString: 152826baa1813b448aac9e582a42e451
+  m_Entries:
+  - m_Id: 169254014976
+    m_Key: HOVER_FOR_DETAILS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 454298914816
+    m_Key: LANGUAGE_SUMMARY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 662726463488
+    m_Key: INTERACTHINT_SUMMARY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 785569239040
+    m_Key: RUNMETHOD_SUMMARY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 933464592384
+    m_Key: WALKRUNDEFAULT_SUMMARY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1069515231232
+    m_Key: CROSSHAIR_SUMMARY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1232963063808
+    m_Key: CAMERASHAKE_SUMMARY
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 990711156082737251
+  references:
+    version: 2
+    RefIds:
+    - rid: 990711156082737251
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1764168398771

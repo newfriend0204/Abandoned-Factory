@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Localization;
 using TMPro;
 
 public class PauseMenuController : MonoBehaviour {
@@ -27,8 +28,7 @@ public class PauseMenuController : MonoBehaviour {
 
     [Header("Summary UI")]
     public TextMeshProUGUI summaryText;
-    [TextArea]
-    public string defaultSummaryText = "";
+    public LocalizedString defaultSummaryText;
 
     [Header("Save Screen")]
     public GameObject saveScreenRoot;
@@ -74,7 +74,7 @@ public class PauseMenuController : MonoBehaviour {
         if (summaryText == null)
             return;
 
-        summaryText.text = defaultSummaryText;
+        summaryText.text = defaultSummaryText.GetLocalizedString();
     }
 
     void OnPressEscape() {

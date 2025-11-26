@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: SettingsSummary_en-US
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en-US
+  m_SharedData: {fileID: 11400000, guid: 152826baa1813b448aac9e582a42e451, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 169254014976
+    m_Localized: Hover your mouse over the box to see more details.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 454298914816
+    m_Localized: 'Change the language displayed in the game.
+
+      You can choose
+      between Korean, English, Japanese, and Chinese (Simplified).'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 662726463488
+    m_Localized: 'Configure whether to display hints for interactable objects.
+
+      On:
+      Icons/text will appear when you enter interaction range.
+
+      Off: You must
+      find interactable objects without any guidance.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 785569239040
+    m_Localized: 'Set the input method for running.
+
+      Hold: You run only while
+      holding the assigned key.
+
+      Toggle: Press the assigned key once to start
+      running, and press again to stop.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 933464592384
+    m_Localized: 'Set whether the default movement state is walking or running.
+
+      Walk
+      by Default: You normally walk and only run when holding the run key.
+
+      Run
+      by Default: You normally run and only slow down when holding the run key.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1069515231232
+    m_Localized: 'Set whether to display a crosshair at the center of the screen.
+
+      On:
+      The crosshair is always visible at the center.
+
+      Off: You must aim using
+      only the environment and your senses, without a crosshair.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1232963063808
+    m_Localized: 'Set whether to use camera shake effects during player movement
+      or events.
+
+      On: Enhances impact feeling, but may cause dizziness for
+      sensitive players.
+
+      Off: No shaking effects, allowing for a more stable
+      and comfortable experience.'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []
