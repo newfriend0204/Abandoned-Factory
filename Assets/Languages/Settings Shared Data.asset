@@ -111,6 +111,174 @@ MonoBehaviour:
     m_Key: SAVE
     m_Metadata:
       m_Items: []
+  - m_Id: 331655538757632
+    m_Key: WINDOWMODE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 331711205560320
+    m_Key: RESOLUTION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 331829367492608
+    m_Key: FOV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 332023169503232
+    m_Key: FRAMELIMIT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 332170465071104
+    m_Key: BRIGHTNESS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 332252044283904
+    m_Key: VSYNC
+    m_Metadata:
+      m_Items: []
+  - m_Id: 333505289736192
+    m_Key: MOTIONBLUR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 333557127139328
+    m_Key: BLOOM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 333744516059136
+    m_Key: SHADOWQUALITY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364354991247360
+    m_Key: FULLSCREEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364459832070144
+    m_Key: BORDERLESSWINDOW
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364553444741120
+    m_Key: WINDOWED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364738350632960
+    m_Key: LOW
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364786249584640
+    m_Key: MEDIUM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364837843718144
+    m_Key: HIGH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366458287902720
+    m_Key: MASTERVOLUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366534552932352
+    m_Key: BGMVOLUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366620380975104
+    m_Key: SFXVOLUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366734583484416
+    m_Key: AMBIENTVOLUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366888690601984
+    m_Key: PLAYINBACKGROUND
+    m_Metadata:
+      m_Items: []
+  - m_Id: 368859833126912
+    m_Key: MOUSESENSITIVITY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 368961838600192
+    m_Key: MOUSESENSITIVITYX
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369263258062848
+    m_Key: MOUSESENSITIVITYY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369443181121536
+    m_Key: MOUSEACCELERATION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369518854754304
+    m_Key: INVERTMOUSEY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369613855739904
+    m_Key: MOVEFORWARD
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369742054641664
+    m_Key: MOVEBACKWARD
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369978906988544
+    m_Key: MOVELEFT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370024201277440
+    m_Key: MOVERIGHT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370204145307648
+    m_Key: RUN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370255999488000
+    m_Key: JUMP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370310210867200
+    m_Key: INTERACT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370440037158912
+    m_Key: TOGGLEFLASHLIGHT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370491186696192
+    m_Key: SHOWHINT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370541908414464
+    m_Key: SHOWSOLUTION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 375946902458368
+    m_Key: EMPTY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381218345668608
+    m_Key: REPLACEKEY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381664804163584
+    m_Key: WARNING
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381929200504832
+    m_Key: SAVECONFIRM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 382002781179904
+    m_Key: DONTSAVECONFIRM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 382049258262528
+    m_Key: SAVECANCEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 387119337132032
+    m_Key: MOVEDKEYLOG
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

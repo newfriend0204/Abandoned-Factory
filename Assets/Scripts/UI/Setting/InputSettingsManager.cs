@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 public class InputSettingsManager : MonoBehaviour {
     [Serializable]
@@ -14,6 +16,8 @@ public class InputSettingsManager : MonoBehaviour {
 
     [Header("Key Bindings")]
     public List<KeyBinding> keyBindings = new List<KeyBinding>();
+    public LocalizedString emptyText;
+    public LocalizedString movedKeyLogFormat;
 
     [Header("Switch Key Screen")]
     public GameObject switchKeyScreenRoot;
@@ -29,6 +33,9 @@ public class InputSettingsManager : MonoBehaviour {
 
     [Header("Save")]
     public string keyBindingFileName = "keybindings.txt";
+
+    [Header("Pause Menu")]
+    public PauseMenuController pauseMenu;
 
     string keyBindingFilePath;
 
@@ -49,8 +56,32 @@ public class InputSettingsManager : MonoBehaviour {
     void Awake() {
         keyBindingFilePath = Path.Combine(Application.persistentDataPath, keyBindingFileName);
 
+        keyBindings.Clear();
         BuildDefaultBindings();
-        LoadKeyBindingsFromFile();
+
+        if (File.Exists(keyBindingFilePath)) {
+            LoadKeyBindingsFromFile();
+        } else {
+            SaveKeyBindingsToFile();
+        }
+
+        foreach (var kvp in rowByActionId) {
+            RefreshRow(kvp.Key);
+        }
+    }
+
+    void OnEnable() {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+    }
+
+    void OnDisable() {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    void OnLocaleChanged(Locale locale) {
+        foreach (var kvp in rowByActionId) {
+            RefreshRow(kvp.Key);
+        }
     }
 
     void BuildDefaultBindings() {
@@ -134,7 +165,7 @@ public class InputSettingsManager : MonoBehaviour {
 
     public string FormatKeyName(KeyCode key) {
         if (key == KeyCode.None)
-            return "(비어있음)";
+            return emptyText.GetLocalizedString();
 
         if (key == KeyCode.Mouse0) return "Mouse L";
         if (key == KeyCode.Mouse1) return "Mouse R";
@@ -273,9 +304,14 @@ public class InputSettingsManager : MonoBehaviour {
             string toLabel = GetLabelForAction(actionId);
             string keyName = FormatKeyName(newKey);
 
-            string msg = $"\"{fromLabel}\"에 배치되어 있던 \"{keyName}\"(이)가 \"{toLabel}\"로 이동됨.";
+            string msg = "";
+            if (movedKeyLogFormat != null) {
+                msg = movedKeyLogFormat.GetLocalizedString(fromLabel, keyName, toLabel);
+            }
             ShowLog(msg);
         }
+
+        pauseMenu.MarkSettingChanged();
     }
 
     void ShowLog(string message) {

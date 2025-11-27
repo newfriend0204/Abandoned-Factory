@@ -114,6 +114,174 @@ MonoBehaviour:
     m_Localized: Save
     m_Metadata:
       m_Items: []
+  - m_Id: 331655538757632
+    m_Localized: Window Mode
+    m_Metadata:
+      m_Items: []
+  - m_Id: 331711205560320
+    m_Localized: Resolution
+    m_Metadata:
+      m_Items: []
+  - m_Id: 331829367492608
+    m_Localized: FOV
+    m_Metadata:
+      m_Items: []
+  - m_Id: 332023169503232
+    m_Localized: Frame Limit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 332170465071104
+    m_Localized: Brightness
+    m_Metadata:
+      m_Items: []
+  - m_Id: 332252044283904
+    m_Localized: VSync
+    m_Metadata:
+      m_Items: []
+  - m_Id: 333505289736192
+    m_Localized: Motion Blur
+    m_Metadata:
+      m_Items: []
+  - m_Id: 333557127139328
+    m_Localized: Bloom
+    m_Metadata:
+      m_Items: []
+  - m_Id: 333744516059136
+    m_Localized: Shadow Quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364354991247360
+    m_Localized: Fullscreen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364459832070144
+    m_Localized: Borderless Window
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364553444741120
+    m_Localized: Windowed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364738350632960
+    m_Localized: Low
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364786249584640
+    m_Localized: Medium
+    m_Metadata:
+      m_Items: []
+  - m_Id: 364837843718144
+    m_Localized: High
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366458287902720
+    m_Localized: Master Volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366534552932352
+    m_Localized: BGM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366620380975104
+    m_Localized: SFX Volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366734583484416
+    m_Localized: Ambient Volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 366888690601984
+    m_Localized: Play Audio in Background
+    m_Metadata:
+      m_Items: []
+  - m_Id: 368859833126912
+    m_Localized: Mouse Sensitivity
+    m_Metadata:
+      m_Items: []
+  - m_Id: 368961838600192
+    m_Localized: Mouse Sensitivity X
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369263258062848
+    m_Localized: Mouse Sensitivity Y
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369443181121536
+    m_Localized: Mouse Acceleration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369518854754304
+    m_Localized: Invert Mouse Y
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369613855739904
+    m_Localized: Move Forward
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369742054641664
+    m_Localized: Move Backward
+    m_Metadata:
+      m_Items: []
+  - m_Id: 369978906988544
+    m_Localized: Move Left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370024201277440
+    m_Localized: Move Right
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370204145307648
+    m_Localized: 'Run '
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370255999488000
+    m_Localized: Jump
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370310210867200
+    m_Localized: Interact
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370440037158912
+    m_Localized: Toggle Flashlight
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370491186696192
+    m_Localized: Show Hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 370541908414464
+    m_Localized: Show Solution
+    m_Metadata:
+      m_Items: []
+  - m_Id: 375946902458368
+    m_Localized: (Empty)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381218345668608
+    m_Localized: Replace Key
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381664804163584
+    m_Localized: Warning
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381929200504832
+    m_Localized: Save and exit.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 382002781179904
+    m_Localized: Exit without saving.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 382049258262528
+    m_Localized: Stay in this window.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 387119337132032
+    m_Localized: '"{1}" previously assigned to "{0}" has been moved to "{2}".'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

@@ -80,6 +80,313 @@ MonoBehaviour:
       and comfortable experience.'
     m_Metadata:
       m_Items: []
+  - m_Id: 320383661330432
+    m_Localized: 'Set how the game screen is displayed.
+
+      Fullscreen: Uses the
+      entire monitor. More immersive, but Alt+Tab switching may be slower.
+
+      Borderless
+      Window: Looks like fullscreen but allows fast Alt+Tab switching.
+
+      Windowed:
+      Displays the game in a resizable window.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 320614532599808
+    m_Localized: "Set the resolution of the game screen.\nHigher resolutions provide
+      a sharper image but require more performance.\nLower resolutions may look blurry,
+      but can improve frame rates.\nIt is recommended to match the setting to your
+      monitor\u2019s native resolution."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 320972000546816
+    m_Localized: 'Adjust the Field of View (FOV).
+
+      Higher values allow you
+      to see a wider area but may increase distortion and motion sickness.
+
+      Lower
+      values narrow your view but provide a more stable and focused image.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 321027826733056
+    m_Localized: 'Limit the maximum frame rate of the game.
+
+      0: Unlimited (Runs
+      at the highest frame rate your monitor and PC can handle.)
+
+      Other values:
+      Locks the frame rate to the selected value (e.g., 60, 120, 144).
+
+      If
+      you are concerned about power consumption or heat, consider setting a reasonable
+      cap.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 322050872004608
+    m_Localized: 'Adjust the overall brightness of the game.
+
+      Lower values
+      make the screen darker, enhancing the horror atmosphere.
+
+      Higher values
+      make the surroundings easier to see but may weaken the intended mood.
+
+      Setting
+      the brightness too high may reduce the impact of dark scenes.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 322445425987584
+    m_Localized: "Configure Vertical Sync (VSync).\nOff (0): The frame rate can exceed
+      the monitor\u2019s refresh rate, but screen tearing may occur.\n1: Synchronizes
+      every frame with the monitor. Reduces tearing but may increase input lag.\n2:
+      Synchronizes every two frames. May lower frame rate but provides a more stable
+      image.\nIf screen tearing bothers you, setting this to 1 or higher is recommended."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 322586136498176
+    m_Localized: 'Set whether to use motion blur effects.
+
+      Off: No ghosting
+      when moving; the image stays sharp.
+
+      On: Fast camera or object movement
+      creates motion trails, giving a cinematic feel.
+
+      If you are prone to
+      motion sickness, turning it off is recommended.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 322799802732544
+    m_Localized: 'Configure the bloom effect, which creates a glowing blur around
+      bright areas.
+
+      Off: Provides a sharp image with no light bleeding.
+
+      On:
+      Bright areas and lights glow more intensely, enhancing the atmosphere.
+
+      If
+      you want stronger horror or lighting effects, keeping this on is recommended.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 322951124832256
+    m_Localized: 'Adjust the quality of shadows.
+
+      Off: No shadows are rendered,
+      offering the best performance.
+
+      Low: Displays simple, low-detail shadows.
+
+      Medium:
+      Balanced shadow quality with moderate performance cost.
+
+      High: High-resolution
+      shadows with smooth edges, but significantly higher performance usage.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 353445879173120
+    m_Localized: 'Adjust the overall game audio volume.
+
+      This affects all sounds,
+      including BGM, sound effects, and ambient audio.
+
+      Use this when you want
+      to change the entire audio level at once, regardless of other settings.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 353735789465600
+    m_Localized: 'Adjust the volume of background music (BGM).
+
+      This affects
+      only the music played during gameplay.
+
+      Use this when you want to change
+      music volume without altering sound effects.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 353784707633152
+    m_Localized: 'Adjust the volume of sound effects (SFX).
+
+      This applies to
+      most in-game sounds such as footsteps, button presses, door opening sounds,
+      mechanical noises, and attack sounds.
+
+      If you have trouble hearing important
+      gameplay cues, consider increasing the SFX volume.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 354004761792512
+    m_Localized: 'Adjust the volume of ambient sounds.
+
+      This applies to atmospheric
+      background noises such as wind, distant machinery, and industrial humming.
+
+      If
+      the horror atmosphere feels too intense, lowering this value may help.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 354125025071104
+    m_Localized: 'Set whether the game should continue playing audio when the window
+      is inactive.
+
+      Off: Audio stops when the window is minimized or when switching
+      to another application via Alt+Tab.
+
+      On: Audio continues to play even
+      when the game window is minimized.
+
+      Unless you need this for streaming,
+      recording, or multitasking, it is recommended to keep this off.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 357233964830720
+    m_Localized: 'Adjust the overall mouse sensitivity.
+
+      Higher values cause
+      the view to rotate more with smaller mouse movements.
+
+      If you use separate
+      X/Y sensitivities, this value is used as the base reference.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 358741905199104
+    m_Localized: 'Adjust the mouse sensitivity for vertical (up/down) rotation.
+
+      Higher
+      values make the view move up and down more with smaller mouse movements.
+
+      If
+      you are prone to motion sickness, consider lowering this value or matching
+      it to the X-axis'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359032855678976
+    m_Localized: 'Adjust the mouse sensitivity for horizontal (left/right) rotation.
+
+      Higher
+      values make the view rotate more widely with smaller mouse movements.
+
+      If
+      precise aiming is difficult, try lowering this value.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359179182362624
+    m_Localized: 'Adjust mouse acceleration, which changes sensitivity based on slow
+      vs. fast movements.
+
+      Closer to 0 means a consistent sensitivity at all
+      speeds.
+
+      Higher values make the view rotate more when you move the mouse
+      quickly.
+
+      For precise aiming, a value of 0 or low is recommended.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359341959106560
+    m_Localized: "Set whether to invert the mouse\u2019s vertical input.\nOff: Moving
+      the mouse up looks upward, and moving it down looks downward. (Normal control)\nOn:
+      Moving the mouse up looks downward, and moving it down looks upward. (Flight-style
+      control)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359588345106432
+    m_Localized: 'Set the key used to move the player forward.
+
+      The player
+      moves forward while the assigned key is held.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359666472407040
+    m_Localized: 'Set the key used to move the player backward.
+
+      The player
+      moves backward while the assigned key is held.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359717311565824
+    m_Localized: 'Set the key used to move the player left.
+
+      The player moves
+      left while the assigned key is held.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359781694132224
+    m_Localized: 'Set the key used to move the player right.
+
+      The player moves
+      right while the assigned key is held.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 359981020041216
+    m_Localized: 'Set the key used to start running.
+
+      The behavior depends
+      on the ''Run Method'' setting (Hold/Toggle).'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 360035785068544
+    m_Localized: 'Set the key used for interactions such as doors, buttons, levers,
+      or inspecting objects.
+
+      When near an interactable object, pressing the
+      assigned key performs the interaction.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 360093720989696
+    m_Localized: 'Set the key used to toggle the flashlight on and off.
+
+      Pressing
+      the assigned key toggles the flashlight.
+
+      Frequently used when exploring
+      dark areas.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 360334625034240
+    m_Localized: 'Set the key used to view hints for the current situation or puzzles.
+
+      Pressing
+      the assigned key may display a simple directional hint.
+
+      (Note: Only
+      available for certain puzzles!)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 360527110033408
+    m_Localized: 'Set the key used to view puzzle solutions or very strong hints.
+
+      Using
+      this may greatly reduce challenge and gameplay enjoyment, so use only when
+      necessary.
+
+      (Note: Only available for certain puzzles!)'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 361457175973888
+    m_Localized: 'Set the key used for jumping.
+
+      Pressing the assigned key
+      makes the player jump.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 367633678684160
+    m_Localized: 'Press a new key.
+
+      ESC: Cancel
+
+      DELETE: Remove the currently
+      assigned key'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 367827673632768
+    m_Localized: 'You have unsaved changes!
+
+      Do you want to save them?'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

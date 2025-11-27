@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using TMPro;
 
 public class PauseMenuController : MonoBehaviour {
@@ -35,6 +36,7 @@ public class PauseMenuController : MonoBehaviour {
 
     bool isPaused = false;
     bool hasUnsavedChanges = false;
+    bool isUsingDefaultSummary = true;
 
     Action pendingAction = null;
 
@@ -54,6 +56,20 @@ public class PauseMenuController : MonoBehaviour {
         ClearSummary();
     }
 
+    void OnEnable() {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+    }
+
+    void OnDisable() {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    void OnLocaleChanged(Locale locale) {
+        if (isUsingDefaultSummary)
+            ClearSummary();
+    }
+
+
     void Update() {
         if (Input.GetKeyDown(KeyCode.Escape))
             OnPressEscape();
@@ -67,6 +83,8 @@ public class PauseMenuController : MonoBehaviour {
         if (summaryText == null)
             return;
 
+        isUsingDefaultSummary = false;
+
         summaryText.text = text;
     }
 
@@ -74,6 +92,7 @@ public class PauseMenuController : MonoBehaviour {
         if (summaryText == null)
             return;
 
+        isUsingDefaultSummary = true;
         summaryText.text = defaultSummaryText.GetLocalizedString();
     }
 

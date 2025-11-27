@@ -47,7 +47,6 @@ public class SettingsManager : MonoBehaviour {
     public void ResetToDefaults() {
         table.Clear();
 
-        // 일반
         SetInt("Language", 0);
         SetInt("InteractHint", 0);
         SetInt("RunMethod", 0);
@@ -55,26 +54,22 @@ public class SettingsManager : MonoBehaviour {
         SetInt("Crosshair", 0);
         SetInt("CameraShake", 0);
 
-        // 그래픽
         SetInt("WindowMode", 0);
         SetInt("Resolution", 0);
         SetFloat("FOV", 60f);
         SetInt("FrameLimit", 3);
         SetFloat("Brightness", 1.0f);
-        SetInt("QualityPreset", 1);
         SetInt("VSync", 1);
         SetInt("MotionBlur", 0);
         SetInt("Bloom", 1);
         SetInt("ShadowQuality", 2);
 
-        // 오디오
         SetInt("MasterVolume", 100);
         SetInt("BgmVolume", 100);
         SetInt("SfxVolume", 100);
         SetInt("AmbientVolume", 100);
         SetInt("PlayInBackground", 1);
 
-        // 조작 수치
         SetFloat("MouseSensitivity", 1.0f);
         SetFloat("MouseSensitivityX", 1.0f);
         SetFloat("MouseSensitivityY", 1.0f);
