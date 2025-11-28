@@ -188,6 +188,9 @@ public class PauseMenuController : MonoBehaviour {
         if (inputSettingsManager != null)
             inputSettingsManager.SaveKeyBindingsToFile();
 
+        if (GameSettingsApplier.Instance != null)
+            GameSettingsApplier.Instance.ApplyAllGraphicsSettings();
+
         hasUnsavedChanges = false;
     }
 

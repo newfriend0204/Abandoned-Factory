@@ -57,12 +57,12 @@ public class SettingsManager : MonoBehaviour {
         SetInt("WindowMode", 0);
         SetInt("Resolution", 0);
         SetFloat("FOV", 60f);
-        SetInt("FrameLimit", 3);
+        SetInt("FrameLimit", 0);
         SetFloat("Brightness", 1.0f);
-        SetInt("VSync", 1);
+        SetInt("VSync", 0);
         SetInt("MotionBlur", 0);
         SetInt("Bloom", 1);
-        SetInt("ShadowQuality", 2);
+        SetInt("ShadowQuality", 3);
 
         SetInt("MasterVolume", 100);
         SetInt("BgmVolume", 100);
