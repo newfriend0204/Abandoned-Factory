@@ -1,7 +1,4 @@
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 public class ButtonInteract : MonoBehaviour {
     [Header("Refs")]
@@ -50,12 +47,15 @@ public class ButtonInteract : MonoBehaviour {
         }
 
         audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
     }
 
     private void Start() {
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
         if (lightOffBeforeHunt && gameManager.State != GameManagerChap1.ChapState.Hunting) {
             targetLight.enabled = false;
         }
@@ -65,10 +65,13 @@ public class ButtonInteract : MonoBehaviour {
         if (!HuntActive)
             return;
 
+        bool showHints = IsInteractHintOn();
+
         float dist = Vector3.Distance(player.position, transform.position);
         bool within = dist <= interactDistance;
 
-        outline.enabled = within && !isActivated;
+        if (outline != null)
+            outline.enabled = showHints && within && !isActivated;
 
         bool isLooking = false;
         if (within) {
@@ -77,31 +80,45 @@ public class ButtonInteract : MonoBehaviour {
             }
         }
 
-        if (!isActivated && within && isLooking) {
+        if (!isActivated && within && isLooking && showHints) {
             gameManager.Pressable(1);
         }
 
-        bool fPressed = false;
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
-            fPressed = true;
-#endif
-        if (Input.GetKeyDown(KeyCode.F))
-            fPressed = true;
+        bool interactPressed = IsInteractPressed();
 
-        if (!isActivated && within && isLooking && fPressed) {
+        if (!isActivated && within && isLooking && interactPressed) {
             targetLight.color = activeColor;
             isActivated = true;
-            outline.enabled = false;
+            if (outline != null)
+                outline.enabled = false;
             gameManager.ReportPressed(this);
-            audioSource.PlayOneShot(pressSfx, pressVolume);
+            if (pressSfx != null)
+                audioSource.PlayOneShot(pressSfx, pressVolume);
         }
     }
 
     public void PrepareForHunt() {
         isActivated = false;
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
         targetLight.enabled = true;
         targetLight.color = idleColor;
+    }
+
+    private bool IsInteractPressed() {
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return false;
+
+        var input = InputSettingsManager.Instance;
+        return input != null && input.GetKeyDown("Interact");
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

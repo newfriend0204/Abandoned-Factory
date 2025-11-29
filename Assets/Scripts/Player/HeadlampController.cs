@@ -8,7 +8,7 @@ public class HeadlampController : MonoBehaviour {
     public Vector3 localOffset = new Vector3(0f, 0f, 0.12f);
     public Vector3 localEulerOffset = Vector3.zero;
 
-    public KeyCode toggleKey = KeyCode.F;
+    public KeyCode toggleKey = KeyCode.R;
     public bool startOn = false;
 
     public float onIntensity = 2.5f;
@@ -65,14 +65,25 @@ public class HeadlampController : MonoBehaviour {
     }
 
     void Update() {
-        if (Input.GetKeyDown(toggleKey)) {
-            isOn = !isOn;
-            PlayClick(isOn);
-            if (fading != null)
-                StopCoroutine(fading);
-            fading = StartCoroutine(FadeBase(isOn ? onIntensity : 0f, fadeTime));
-            if (isOn)
-                ScheduleNextDip();
+        if (!Mathf.Approximately(Time.timeScale, 0f)) {
+            bool togglePressed = false;
+
+            var input = InputSettingsManager.Instance;
+            if (input != null) {
+                togglePressed = input.GetKeyDown("ToggleFlashlight");
+            } else {
+                togglePressed = Input.GetKeyDown(toggleKey);
+            }
+
+            if (togglePressed) {
+                isOn = !isOn;
+                PlayClick(isOn);
+                if (fading != null)
+                    StopCoroutine(fading);
+                fading = StartCoroutine(FadeBase(isOn ? onIntensity : 0f, fadeTime));
+                if (isOn)
+                    ScheduleNextDip();
+            }
         }
 
         headlamp.transform.SetPositionAndRotation(
@@ -115,14 +126,18 @@ public class HeadlampController : MonoBehaviour {
             }
 
             if (isOn && Time.time >= nextDipTime && !dipActive) {
-                dipActive = true; dipT = 0f;
+                dipActive = true;
+                dipT = 0f;
             }
             if (dipActive) {
                 dipT += Time.deltaTime / Mathf.Max(0.0001f, microDipDuration);
                 float env = 1f - Mathf.Abs((dipT - 0.5f) * 2f);
                 float dip = 1f - microDipAmp * env;
                 mod *= Mathf.Clamp(dip, 0.2f, 1f);
-                if (dipT >= 1f) { dipActive = false; ScheduleNextDip(); }
+                if (dipT >= 1f) {
+                    dipActive = false;
+                    ScheduleNextDip();
+                }
             }
 
             float finalIntensity = fadeBase * mod;

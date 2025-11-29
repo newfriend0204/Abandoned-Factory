@@ -1,7 +1,4 @@
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 [DisallowMultipleComponent]
 public class PowerChecker : MonoBehaviour {
@@ -50,7 +47,8 @@ public class PowerChecker : MonoBehaviour {
 
     private void Start() {
         indicator.color = Color.red;
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
     }
 
     private void Update() {
@@ -62,28 +60,26 @@ public class PowerChecker : MonoBehaviour {
             }
         }
 
+        bool showHints = IsInteractHintOn();
+
         if (within && isLooking) {
-            if (gameManager.State == GameManagerChap1.ChapState.ShutterOpened ||
-                gameManager.State == GameManagerChap1.ChapState.PowerRestoring ||
-                gameManager.State == GameManagerChap1.ChapState.MainPowerRestored) {
+            if (showHints &&
+                (gameManager.State == GameManagerChap1.ChapState.ShutterOpened ||
+                 gameManager.State == GameManagerChap1.ChapState.PowerRestoring ||
+                 gameManager.State == GameManagerChap1.ChapState.MainPowerRestored)) {
                 gameManager.Pressable(1);
             }
         }
 
         bool interactableNow = gameManager.State != GameManagerChap1.ChapState.MainPowerRestored;
-        outline.enabled = within && interactableNow;
+        if (outline != null)
+            outline.enabled = showHints && within && interactableNow;
 
         indicator.color = gameManager.AreAllAuxOn() ? Color.blue : Color.red;
 
-        bool fPressed = false;
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current.fKey.wasPressedThisFrame)
-            fPressed = true;
-#endif
-        if (Input.GetKeyDown(KeyCode.F))
-            fPressed = true;
+        bool interactPressed = IsInteractPressed();
 
-        if (!within || !isLooking || !fPressed)
+        if (!within || !isLooking || !interactPressed)
             return;
 
         switch (gameManager.State) {
@@ -99,6 +95,24 @@ public class PowerChecker : MonoBehaviour {
     }
 
     private void PlayPress() {
-        audioSource.PlayOneShot(pressSfx, pressVolume);
+        if (pressSfx != null)
+            audioSource.PlayOneShot(pressSfx, pressVolume);
+    }
+
+    private bool IsInteractPressed() {
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return false;
+
+        var input = InputSettingsManager.Instance;
+        return input != null && input.GetKeyDown("Interact");
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

@@ -40,20 +40,25 @@ public class LightNode : MonoBehaviour {
                 }
             }
         }
-        outline = targetBox.GetComponent<Outline>();
+        if (outline == null && targetBox != null)
+            outline = targetBox.GetComponent<Outline>();
 
         lightComp.intensity = isOn ? onIntensity : offIntensity;
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
     }
 
     void Update() {
         if (interactionLocked)
             return;
 
+        bool hintsOn = IsInteractHintOn();
+
         bool looking = IsInteractable(viewCamera);
         if (outline != null)
-            outline.enabled = looking;
-        if (looking)
+            outline.enabled = hintsOn && looking;
+
+        if (looking && hintsOn)
             gameManager.Pressable(1);
     }
 
@@ -74,8 +79,10 @@ public class LightNode : MonoBehaviour {
 
     public void LockInteraction(bool locked) {
         interactionLocked = locked;
-        outline.enabled = false;
-        targetBox.enabled = !locked;
+        if (outline != null)
+            outline.enabled = false;
+        if (targetBox != null)
+            targetBox.enabled = !locked;
     }
 
     public void SetState(bool on, bool animate = true) {
@@ -139,5 +146,14 @@ public class LightNode : MonoBehaviour {
             yield return null;
         }
         tr.localScale = baseS;
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

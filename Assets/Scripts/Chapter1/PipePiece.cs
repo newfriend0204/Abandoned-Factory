@@ -47,12 +47,15 @@ public class PipePiece : MonoBehaviour {
 
         if (outline == null)
             outline = FindOutlineBehaviour(gameObject);
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
 
         if (targetCollider == null)
             targetCollider = GetComponent<BoxCollider>();
 
         audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
 
         if (!twoStateSymmetry && name.Contains("L100"))
             twoStateSymmetry = true;
@@ -60,7 +63,8 @@ public class PipePiece : MonoBehaviour {
 
     private void Update() {
         if (gameManager.IsPipePartSolved(partIndex)) {
-            outline.enabled = false;
+            if (outline != null)
+                outline.enabled = false;
             enabled = false;
             return;
         }
@@ -68,11 +72,15 @@ public class PipePiece : MonoBehaviour {
         bool near = Vector3.Distance(player.position, transform.position) <= interactDistance;
         bool looked = near && IsLookingAtThis();
 
-        outline.enabled = looked;
+        bool showHints = IsInteractHintOn();
+
+        if (outline != null)
+            outline.enabled = showHints && looked;
 
         if (looked) {
-            gameManager.Pressable(3);
-            if (Input.GetKeyDown(KeyCode.F)) {
+            if (showHints)
+                gameManager.Pressable(3);
+            if (IsInteractPressed()) {
                 SnapRotate90();
             }
         }
@@ -112,7 +120,8 @@ public class PipePiece : MonoBehaviour {
     public PipeAxisMode DebugMode => mode;
 
     private void SnapRotate90() {
-        if (rotateSfx != null) audioSource.PlayOneShot(rotateSfx, rotateVolume);
+        if (rotateSfx != null)
+            audioSource.PlayOneShot(rotateSfx, rotateVolume);
         _step = (_step + 1) & 3;
         ApplyStepToTransform(_step);
     }
@@ -162,5 +171,22 @@ public class PipePiece : MonoBehaviour {
                 return b;
         }
         return null;
+    }
+
+    private bool IsInteractPressed() {
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return false;
+
+        var input = InputSettingsManager.Instance;
+        return input != null && input.GetKeyDown("Interact");
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

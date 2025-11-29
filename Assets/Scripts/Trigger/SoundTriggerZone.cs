@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Audio;
 
 [RequireComponent(typeof(Collider))]
 public class SoundTriggerZone : MonoBehaviour {
@@ -14,6 +15,9 @@ public class SoundTriggerZone : MonoBehaviour {
     public float spatialBlend = 1f;
     [Range(0f, 1f)]
     public float volume = 1f;
+
+    [Header("Mixer Group")]
+    public AudioMixerGroup outputGroup;
 
     [Header("Repeat")]
     public bool allowRepeat = false;
@@ -58,7 +62,10 @@ public class SoundTriggerZone : MonoBehaviour {
             yield return new WaitForSeconds(soundDelay);
 
         Vector3 pos = transform.position;
-        pos = soundOrigin.position;
+
+        if (soundOrigin != null) {
+            pos = soundOrigin.position;
+        }
 
         GameObject temp = new GameObject("TriggerSoundZone_Audio");
         temp.transform.position = pos;
@@ -70,8 +77,16 @@ public class SoundTriggerZone : MonoBehaviour {
         src.playOnAwake = false;
         src.loop = false;
 
+        if (outputGroup != null) {
+            src.outputAudioMixerGroup = outputGroup;
+        }
+
         src.Play();
 
-        Destroy(temp, src.clip.length + 0.1f);
+        if (src.clip != null) {
+            Destroy(temp, src.clip.length + 0.1f);
+        } else {
+            Destroy(temp, 1f);
+        }
     }
 }

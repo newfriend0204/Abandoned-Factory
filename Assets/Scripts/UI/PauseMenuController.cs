@@ -191,6 +191,11 @@ public class PauseMenuController : MonoBehaviour {
         if (GameSettingsApplier.Instance != null)
             GameSettingsApplier.Instance.ApplyAllGraphicsSettings();
 
+        var pc = FindFirstObjectByType<PlayerController>();
+        if (pc != null) {
+            pc.LoadSettingsFromManager();
+        }
+
         hasUnsavedChanges = false;
     }
 

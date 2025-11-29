@@ -59,14 +59,16 @@ public class ButtonChecker : MonoBehaviour {
         }
 
         audioSource = GetComponent<AudioSource>();
-        audioSource = gameObject.AddComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
     }
 
     private void Start() {
         SetIndicatorIdle();
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
     }
 
     private void Update() {
@@ -81,24 +83,20 @@ public class ButtonChecker : MonoBehaviour {
             }
         }
 
-        if (within && isLooking && gameManager.State != GameManagerChap1.ChapState.Hunting) {
+        bool hintsOn = IsInteractHintOn();
+
+        if (within && isLooking && gameManager.State != GameManagerChap1.ChapState.Hunting && hintsOn) {
             gameManager.Pressable(1);
         }
 
         if (outline != null) {
             bool interactableNow = gameManager.State != GameManagerChap1.ChapState.ShutterOpened;
-            outline.enabled = within && interactableNow && !isActivated;
+            outline.enabled = hintsOn && within && interactableNow && !isActivated;
         }
 
-        bool fPressed = false;
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
-            fPressed = true;
-#endif
-        if (Input.GetKeyDown(KeyCode.F))
-            fPressed = true;
+        bool interactPressed = IsInteractPressed();
 
-        if (!within || !isLooking || !fPressed)
+        if (!within || !isLooking || !interactPressed)
             return;
 
         switch (gameManager.State) {
@@ -134,7 +132,8 @@ public class ButtonChecker : MonoBehaviour {
     }
 
     private void PlayPress() {
-        audioSource.PlayOneShot(pressSfx, pressVolume);
+        if (pressSfx != null)
+            audioSource.PlayOneShot(pressSfx, pressVolume);
     }
 
     public void SetIndicatorIdle() {
@@ -179,5 +178,22 @@ public class ButtonChecker : MonoBehaviour {
         shutter.localPosition = targetPos;
 
         gameManager.SealShutterOpened();
+    }
+
+    private bool IsInteractPressed() {
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return false;
+
+        var input = InputSettingsManager.Instance;
+        return input != null && input.GetKeyDown("Interact");
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

@@ -310,6 +310,7 @@ MonoBehaviour:
   minPitch: -80
   maxPitch: 80
   lockCursor: 1
+  useSettingsManager: 1
   jumpHeight: 0.9
   timeToApex: 0.2
   postJumpIgnoreDuration: 0.08
@@ -370,6 +371,7 @@ MonoBehaviour:
   actionSource: {fileID: 2633942867006060167}
   jumpClip: {fileID: 8300000, guid: bc1f1fa684ad45e4f81894eaa279d1e0, type: 3}
   landClip: {fileID: 8300000, guid: 099c984abfec6464fb227b0f8beacf1b, type: 3}
+  inputSettingsManager: {fileID: 0}
 --- !u!82 &2633942867006060167
 AudioSource:
   m_ObjectHideFlags: 0
@@ -379,7 +381,7 @@ AudioSource:
   m_GameObject: {fileID: 8821582039338312866}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -6458451031688359589, guid: 0f823e7550853d7449c1064204aee51f, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
@@ -673,7 +675,7 @@ AudioSource:
   m_GameObject: {fileID: 9141575319212836362}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -6458451031688359589, guid: 0f823e7550853d7449c1064204aee51f, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 6800695c28784004094ac957b743e183, type: 3}
   m_PlayOnAwake: 0

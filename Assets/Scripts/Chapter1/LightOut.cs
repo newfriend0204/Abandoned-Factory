@@ -59,7 +59,23 @@ public class LightOut : MonoBehaviour {
         if (isCleared)
             return;
 
-        if (Input.GetKeyDown(KeyCode.F)) {
+        // 일시정지 상태에서는 입력(클릭/힌트/정답) 전부 무시
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return;
+
+        var input = InputSettingsManager.Instance;
+
+        bool interactPressed = false;
+        bool showHintPressed = false;
+        bool showSolutionPressed = false;
+
+        if (input != null) {
+            interactPressed = input.GetKeyDown("Interact");
+            showHintPressed = input.GetKeyDown("ShowHint");
+            showSolutionPressed = input.GetKeyDown("ShowSolution");
+        }
+
+        if (interactPressed) {
             Ray centerRay = viewCamera.ScreenPointToRay(
                 new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f)
             );
@@ -79,7 +95,7 @@ public class LightOut : MonoBehaviour {
             }
         }
 
-        if (hintUnlocked && Input.GetKeyDown(KeyCode.H)) {
+        if (hintUnlocked && showHintPressed) {
             var sol = ComputeSolutionIndices();
             if (sol != null && sol.Count > 0) {
                 int next = sol[0];
@@ -87,7 +103,7 @@ public class LightOut : MonoBehaviour {
             }
         }
 
-        if (hintUnlocked && Input.GetKeyDown(KeyCode.G)) {
+        if (hintUnlocked && showSolutionPressed) {
             var sol = ComputeSolutionIndices();
             if (sol != null && sol.Count > 0) {
                 StartCoroutine(PlaySolution(sol));
@@ -131,7 +147,6 @@ public class LightOut : MonoBehaviour {
         hintUnlocked = true;
         gameManager.NorthEasternAreaHintAvailable();
     }
-
 
     void PlayClick() {
         audioSource.PlayOneShot(clickSfx);
@@ -290,7 +305,7 @@ public class LightOut : MonoBehaviour {
 
     IEnumerator PlaySolution(List<int> solution) {
         foreach (var idx in solution) {
-            if (isCleared) 
+            if (isCleared)
                 yield break;
             PlayClick();
             yield return ToggleWithRipple(idx);

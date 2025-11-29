@@ -24,6 +24,26 @@ public class PlayerController : MonoBehaviour {
     public float maxPitch = 80f;
     public bool lockCursor = true;
 
+    [Header("Gameplay Settings (from SettingsManager)")]
+    public bool useSettingsManager = true;
+
+    // 0 = hold, 1 = toggle
+    private int runMethod = 0;
+    // 0 = 기본 걷기, 1 = 기본 달리기
+    private int walkRunDefault = 0;
+    private bool cameraShakeEnabled = true;
+
+    // 마우스 감도 (설정 메뉴에서 오는 값들)
+    private float mouseSensitivity = 1.0f;   // 0.01 ~ 10
+    private float mouseSensitivityX = 1.0f;  // 0.01 ~ 2
+    private float mouseSensitivityY = 1.0f;  // 0.01 ~ 2
+    private float mouseAcceleration = 0.0f;  // 0 ~ 1
+    private bool invertMouseY = false;       // false = 정상, true = 반전
+
+    private float baseSensX;
+    private float baseSensY;
+    private bool runToggleState;
+
     [Header("Jump")]
     public float jumpHeight = 1.6f;
     public float timeToApex = 0.28f;
@@ -104,17 +124,25 @@ public class PlayerController : MonoBehaviour {
     public AudioClip jumpClip;
     public AudioClip landClip;
 
+    [Header("Input Settings Manager")]
+    public InputSettingsManager inputSettingsManager;
+
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private float pitch;
-    private bool grounded, onTooSteep, nearWall;
-    private Vector3 groundNormal = Vector3.up, wallNormal = Vector3.zero;
+    private bool grounded;
+    private bool onTooSteep;
+    private bool nearWall;
+    private Vector3 groundNormal = Vector3.up;
+    private Vector3 wallNormal = Vector3.zero;
     private float slopeAngle;
     private bool jumpRequested;
     private float postJumpIgnoreTimer;
 
-    private float customGravityY, jumpVelocityY;
-    private float lastGroundedTime, lastJumpPressedTime;
+    private float customGravityY;
+    private float jumpVelocityY;
+    private float lastGroundedTime;
+    private float lastJumpPressedTime;
     private bool wasGrounded;
     private float yVelPrev;
     private float sinceJump = 999f;
@@ -123,7 +151,8 @@ public class PlayerController : MonoBehaviour {
     private Vector3 camBaseLocalPos;
     private float bobTimer;
     private float landingKickT;
-    private float fxRoll, fxPitch;
+    private float fxRoll;
+    private float fxPitch;
 
     private float landingRollT;
     private float landingRollSign;
@@ -144,8 +173,29 @@ public class PlayerController : MonoBehaviour {
     private void Awake() {
         rb = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
-        baseFOV = playerCamera.fieldOfView;
-        camBaseLocalPos = playerCamera.transform.localPosition;
+
+        baseSensX = sensX;
+        baseSensY = sensY;
+
+        if (playerCamera != null) {
+            baseFOV = playerCamera.fieldOfView;
+            camBaseLocalPos = playerCamera.transform.localPosition;
+        }
+
+        if (inputSettingsManager == null) {
+            if (InputSettingsManager.Instance != null) {
+                inputSettingsManager = InputSettingsManager.Instance;
+            } else {
+                inputSettingsManager = FindFirstObjectByType<InputSettingsManager>();
+            }
+        }
+
+        if (useSettingsManager) {
+            LoadSettingsFromManager();
+        } else {
+            runToggleState = (walkRunDefault == 1);
+        }
+
         RecomputeJumpPhysics();
         gameStartTime = Time.time;
         lastJumpPressedTime = -999f;
@@ -165,6 +215,41 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
+    public void LoadSettingsFromManager() {
+        if (!useSettingsManager)
+            return;
+
+        if (SettingsManager.Instance == null)
+            return;
+
+        runMethod = SettingsManager.Instance.GetInt("RunMethod", 0);
+        walkRunDefault = SettingsManager.Instance.GetInt("WalkRunDefault", 0);
+
+        int camShake = SettingsManager.Instance.GetInt("CameraShake", 0);
+        cameraShakeEnabled = (camShake == 0);
+
+        int invY = SettingsManager.Instance.GetInt("InvertMouseY", 0);
+        invertMouseY = (invY == 1);
+
+        float fov = SettingsManager.Instance.GetFloat("FOV", baseFOV);
+        baseFOV = fov;
+        if (playerCamera != null) {
+            playerCamera.fieldOfView = fov;
+        }
+
+        mouseSensitivity = SettingsManager.Instance.GetFloat("MouseSensitivity", 1.0f);
+        mouseSensitivityX = SettingsManager.Instance.GetFloat("MouseSensitivityX", 1.0f);
+        mouseSensitivityY = SettingsManager.Instance.GetFloat("MouseSensitivityY", 1.0f);
+        mouseAcceleration = SettingsManager.Instance.GetFloat("MouseAcceleration", 0.0f);
+
+        mouseSensitivity = Mathf.Clamp(mouseSensitivity, 0.01f, 10f);
+        mouseSensitivityX = Mathf.Clamp(mouseSensitivityX, 0.01f, 2.0f);
+        mouseSensitivityY = Mathf.Clamp(mouseSensitivityY, 0.01f, 2.0f);
+        mouseAcceleration = Mathf.Clamp01(mouseAcceleration);
+
+        runToggleState = (walkRunDefault == 1);
+    }
+
     private void Update() {
         if (Time.timeScale == 0f) {
             Cursor.lockState = CursorLockMode.None;
@@ -177,10 +262,43 @@ public class PlayerController : MonoBehaviour {
             }
         }
 
+        // -------------------------
+        //  마우스 입력
+        // -------------------------
         float mx = Input.GetAxisRaw("Mouse X");
         float my = Input.GetAxisRaw("Mouse Y");
-        pitch = Mathf.Clamp(pitch - my * sensY, minPitch, maxPitch);
-        transform.Rotate(Vector3.up, mx * sensX, Space.Self);
+
+        float mouseMag = Mathf.Sqrt(mx * mx + my * my);
+        float accelFactor = 1f + mouseAcceleration * mouseMag;
+        if (accelFactor < 0f) {
+            accelFactor = 0f;
+        }
+
+        float effectiveSensX = baseSensX * mouseSensitivity * mouseSensitivityX * accelFactor;
+        float effectiveSensY = baseSensY * mouseSensitivity * mouseSensitivityY * accelFactor;
+
+        float yInput = my;
+        if (invertMouseY) {
+            yInput = -yInput;
+        }
+
+        pitch = Mathf.Clamp(pitch - yInput * effectiveSensY, minPitch, maxPitch);
+        transform.Rotate(Vector3.up, mx * effectiveSensX, Space.Self);
+
+        // -------------------------
+        //  이동 키 입력 (축 계산)
+        // -------------------------
+        float moveX = GetAxisFromBindings("MoveRight", "MoveLeft");
+        float moveZ = GetAxisFromBindings("MoveForward", "MoveBackward");
+        bool hasMoveInput = (Mathf.Abs(moveX) + Mathf.Abs(moveZ)) > 0.001f;
+
+        // -------------------------
+        //  점프 입력 (버퍼용)
+        // -------------------------
+        if (IsActionDown("Jump")) {
+            lastJumpPressedTime = Time.time;
+            jumpSoundPlayed = false;
+        }
 
         bool ignoreGroundNow = false;
         if (postJumpIgnoreTimer > 0f) {
@@ -267,9 +385,7 @@ public class PlayerController : MonoBehaviour {
 
         nearWall = false;
         wallNormal = Vector3.zero;
-        float ix = Input.GetAxisRaw("Horizontal");
-        float iz = Input.GetAxisRaw("Vertical");
-        Vector3 wishDirForWall = (transform.right * ix + transform.forward * iz).normalized;
+        Vector3 wishDirForWall = (transform.right * moveX + transform.forward * moveZ).normalized;
         if (wishDirForWall.sqrMagnitude > 0.01f) {
             float halfH = capsule ? capsule.height * 0.5f : 1f;
             float r = capsule ? capsule.radius : 0.5f;
@@ -282,11 +398,6 @@ public class PlayerController : MonoBehaviour {
                     wallNormal = wh.normal;
                 }
             }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            lastJumpPressedTime = Time.time;
-            jumpSoundPlayed = false;
         }
 
         if (grounded) {
@@ -304,23 +415,46 @@ public class PlayerController : MonoBehaviour {
         float maxSpeed = moveSpeed * sprintMultiplier;
         float speed01 = grounded ? Mathf.Clamp01(hzSpeed / maxSpeed) : 0f;
 
-        bool shiftHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-        bool hasMoveInput = (Mathf.Abs(Input.GetAxisRaw("Horizontal")) + Mathf.Abs(Input.GetAxisRaw("Vertical"))) > 0.001f;
-        bool wantsSprint = shiftHeld && hasMoveInput;
+        // -------------------------
+        //  RunMethod / WalkRunDefault 처리
+        // -------------------------
+        bool runKeyHeld = IsActionPressed("Run");
+        bool runKeyDown = IsActionDown("Run");
+
+        if (runMethod == 1) {
+            if (runKeyDown) {
+                runToggleState = !runToggleState;
+            }
+        }
+
+        bool sprintState;
+        if (runMethod == 0) {
+            if (walkRunDefault == 0) {
+                sprintState = runKeyHeld;
+            } else {
+                sprintState = !runKeyHeld;
+            }
+        } else {
+            sprintState = runToggleState;
+        }
+
+        bool wantsSprint = sprintState && hasMoveInput;
 
         UpdateSprintStamina(wantsSprint);
         UpdateFootstepAudio(hzSpeed);
 
-        handAnimator.SetFloat(AnimSpeed, speed01, 0.1f, Time.deltaTime);
-        handAnimator.SetBool(AnimSprinting, sprinting);
+        if (handAnimator != null) {
+            handAnimator.SetFloat(AnimSpeed, speed01, 0.1f, Time.deltaTime);
+            handAnimator.SetBool(AnimSprinting, sprinting);
+        }
     }
 
     private void FixedUpdate() {
         if (Time.timeScale == 0f)
             return;
 
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
+        float x = GetAxisFromBindings("MoveRight", "MoveLeft");
+        float z = GetAxisFromBindings("MoveForward", "MoveBackward");
         bool hasMoveInput = (Mathf.Abs(x) + Mathf.Abs(z)) > 0.001f;
 
         bool sprint = sprinting && hasMoveInput;
@@ -426,25 +560,34 @@ public class PlayerController : MonoBehaviour {
     private void UpdateCameraFX() {
         bool sprint = sprinting;
 
-        float targetFov = baseFOV + (sprint ? fovKick : 0f);
-        playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFov, Time.deltaTime * fovKickSpeed);
+        float targetFov = baseFOV;
+        if (cameraShakeEnabled) {
+            targetFov = baseFOV + (sprint ? fovKick : 0f);
+        }
+        if (playerCamera != null) {
+            playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFov, Time.deltaTime * fovKickSpeed);
+        }
 
         float hzSpeed = new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude;
         bool moving = hzSpeed > 0.1f;
 
-        float freq = moving ? (sprint ? headBobRunFreq : headBobWalkFreq) : 0f;
-        float amp = moving ? (sprint ? headBobRunAmp : headBobWalkAmp) : 0f;
+        float freq = 0f;
+        float amp = 0f;
+        if (moving) {
+            freq = sprint ? headBobRunFreq : headBobWalkFreq;
+            amp = sprint ? headBobRunAmp : headBobWalkAmp;
+        }
 
-        if (freq > 0f) {
+        if (cameraShakeEnabled && freq > 0f) {
             bobTimer += Time.deltaTime * freq;
         } else {
             bobTimer = 0f;
         }
 
-        float bobOffset = amp * Mathf.Sin(bobTimer * Mathf.PI * 2f);
+        float bobOffset = cameraShakeEnabled ? amp * Mathf.Sin(bobTimer * Mathf.PI * 2f) : 0f;
 
         float kickOffsetY = 0f;
-        if (landingKickT > 0f) {
+        if (cameraShakeEnabled && landingKickT > 0f) {
             float t = 1f - landingKickT;
             float curve = Mathf.Sin(t * Mathf.PI);
             kickOffsetY = -landingKickAmp * curve;
@@ -452,18 +595,23 @@ public class PlayerController : MonoBehaviour {
         }
 
         Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
-        float targetRoll = Mathf.Clamp(-velLocal.x / (moveSpeed * sprintMultiplier) * tiltRollMax, -tiltRollMax, tiltRollMax);
-        float targetPitch = grounded ? 0f :
-            Mathf.Clamp(-velLocal.z / (moveSpeed * sprintMultiplier) * tiltPitchAirMax, -tiltPitchAirMax, tiltPitchAirMax);
+        float targetRoll = 0f;
+        float targetPitch = 0f;
+        if (cameraShakeEnabled) {
+            targetRoll = Mathf.Clamp(-velLocal.x / (moveSpeed * sprintMultiplier) * tiltRollMax, -tiltRollMax, tiltRollMax);
+            if (!grounded) {
+                targetPitch = Mathf.Clamp(-velLocal.z / (moveSpeed * sprintMultiplier) * tiltPitchAirMax, -tiltPitchAirMax, tiltPitchAirMax);
+            }
+        }
 
-        float horIn = Mathf.Abs(Input.GetAxisRaw("Horizontal"));
+        float horIn = Mathf.Abs(GetAxisFromBindings("MoveRight", "MoveLeft"));
         float rollSpeed = (horIn < 0.001f) ? tiltRollReturnSpeed : tiltRollSpeed;
 
         fxRoll = Mathf.Lerp(fxRoll, targetRoll, Time.deltaTime * rollSpeed);
         fxPitch = Mathf.Lerp(fxPitch, targetPitch, Time.deltaTime * tiltPitchSpeed);
 
         float rollPulse = 0f;
-        if (landingRollT > 0f) {
+        if (cameraShakeEnabled && landingRollT > 0f) {
             float t = 1f - landingRollT;
             float osc = Mathf.Sin(t * Mathf.PI * 2f);
             float env = (1f - t);
@@ -473,10 +621,12 @@ public class PlayerController : MonoBehaviour {
 
         Vector3 pos = camBaseLocalPos;
         pos.y += bobOffset + kickOffsetY;
-        playerCamera.transform.localPosition = pos;
+        if (playerCamera != null) {
+            playerCamera.transform.localPosition = pos;
 
-        float finalRoll = Mathf.Clamp(fxRoll + rollPulse, -rollClamp, rollClamp);
-        playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch, 0f, finalRoll);
+            float finalRoll = Mathf.Clamp(fxRoll + rollPulse, -rollClamp, rollClamp);
+            playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch, 0f, finalRoll);
+        }
     }
 
     private void OnValidate() {
@@ -521,7 +671,6 @@ public class PlayerController : MonoBehaviour {
             }
 
             if (timeSinceStoppedSprint >= sprintRegenDelay) {
-                float prev = sprintStamina;
                 sprintStamina += sprintRegenPerSecond * Time.deltaTime;
                 sprintStamina = Mathf.Min(sprintStamina, sprintStaminaMax);
 
@@ -557,6 +706,9 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void PlayFootstep() {
+        if (footstepSource == null || footstepClips.Count == 0)
+            return;
+
         int count = footstepClips.Count;
         int index = Random.Range(0, count);
 
@@ -574,11 +726,67 @@ public class PlayerController : MonoBehaviour {
             return;
         }
 
-        actionSource.PlayOneShot(jumpClip);
+        if (jumpClip != null && actionSource != null) {
+            actionSource.PlayOneShot(jumpClip);
+        }
+
         jumpSoundPlayed = true;
     }
 
     private void PlayLandSound() {
-        actionSource.PlayOneShot(landClip);
+        if (landClip != null && actionSource != null) {
+            actionSource.PlayOneShot(landClip);
+        }
+    }
+
+    // -------------------------
+    //  Keybinding Helper들
+    // -------------------------
+    private bool IsActionPressed(string actionId) {
+        if (inputSettingsManager != null) {
+            return inputSettingsManager.GetKey(actionId);
+        }
+
+        // 폴백: InputSettingsManager 가 전혀 없을 때만 기본 키 사용
+        if (actionId == "MoveForward") return Input.GetKey(KeyCode.W);
+        if (actionId == "MoveBackward") return Input.GetKey(KeyCode.S);
+        if (actionId == "MoveLeft") return Input.GetKey(KeyCode.A);
+        if (actionId == "MoveRight") return Input.GetKey(KeyCode.D);
+        if (actionId == "Run") return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        if (actionId == "Jump") return Input.GetKey(KeyCode.Space);
+
+        return false;
+    }
+
+    private bool IsActionDown(string actionId) {
+        if (inputSettingsManager != null) {
+            return inputSettingsManager.GetKeyDown(actionId);
+        }
+
+        if (actionId == "MoveForward") return Input.GetKeyDown(KeyCode.W);
+        if (actionId == "MoveBackward") return Input.GetKeyDown(KeyCode.S);
+        if (actionId == "MoveLeft") return Input.GetKeyDown(KeyCode.A);
+        if (actionId == "MoveRight") return Input.GetKeyDown(KeyCode.D);
+        if (actionId == "Run") return Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift);
+        if (actionId == "Jump") return Input.GetKeyDown(KeyCode.Space);
+
+        return false;
+    }
+
+    private float GetAxisFromBindings(string positiveAction, string negativeAction) {
+        if (inputSettingsManager != null) {
+            bool pos = inputSettingsManager.GetKey(positiveAction);
+            bool neg = inputSettingsManager.GetKey(negativeAction);
+
+            if (pos == neg) {
+                return 0f;
+            }
+            return pos ? 1f : -1f;
+        }
+
+        float v = 0f;
+        if (IsActionPressed(positiveAction)) v += 1f;
+        if (IsActionPressed(negativeAction)) v -= 1f;
+        return Mathf.Clamp(v, -1f, 1f);
     }
 }

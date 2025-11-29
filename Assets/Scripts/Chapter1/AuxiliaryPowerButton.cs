@@ -1,8 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 public class AuxiliaryPowerButton : MonoBehaviour {
     [Header("Refs")]
@@ -38,14 +35,28 @@ public class AuxiliaryPowerButton : MonoBehaviour {
             if (viewCamera == null)
                 viewCamera = Camera.main;
         }
+
         GetComponentsInChildren(true, ownedColliders);
+
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
+
+        if (outline == null) {
+            var behaviours = GetComponentsInChildren<Behaviour>(true);
+            for (int i = 0; i < behaviours.Length; i++) {
+                var b = behaviours[i];
+                if (b != null && b.GetType().Name == "Outline") {
+                    outline = b;
+                    break;
+                }
+            }
+        }
     }
 
     private void Start() {
-        outline.enabled = false;
+        if (outline != null)
+            outline.enabled = false;
         SyncIndicator();
     }
 
@@ -68,23 +79,18 @@ public class AuxiliaryPowerButton : MonoBehaviour {
         }
 
         bool auxOn = gameManager.IsAuxOn(auxIndex);
-
-        outline.enabled = inPowerRestoring && !auxOn && within;
-
         bool canPress = inPowerRestoring && !auxOn && within && (!requireLook || isLooking);
-        if (canPress)
+        bool showHints = IsInteractHintOn();
+
+        if (outline != null)
+            outline.enabled = showHints && inPowerRestoring && !auxOn && within;
+
+        if (canPress && showHints)
             gameManager.Pressable(1);
 
         SyncIndicator();
 
-        bool fPressed = false;
-#if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current.fKey.wasPressedThisFrame)
-            fPressed = true;
-#endif
-        if (Input.GetKeyDown(KeyCode.F))
-            fPressed = true;
-        if (!fPressed)
+        if (!IsInteractPressed())
             return;
 
         if (canPress) {
@@ -111,6 +117,24 @@ public class AuxiliaryPowerButton : MonoBehaviour {
     }
 
     private void PlayPress() {
-        audioSource.PlayOneShot(pressSfx, pressVolume);
+        if (pressSfx != null)
+            audioSource.PlayOneShot(pressSfx, pressVolume);
+    }
+
+    private bool IsInteractPressed() {
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return false;
+
+        var input = InputSettingsManager.Instance;
+        return input != null && input.GetKeyDown("Interact");
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

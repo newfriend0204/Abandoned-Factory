@@ -30,13 +30,10 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 662726463488
-    m_Localized: 'Configure whether to display hints for interactable objects.
-
-      On:
-      Icons/text will appear when you enter interaction range.
-
-      Off: You must
-      find interactable objects without any guidance.'
+    m_Localized: "Configure whether to show hints for interactable objects.\nOn:
+      Objects within interaction range display an outline and hint text, and inspectable
+      objects may show an outline even from a distance.\nOff: No hints are provided\u2014you
+      must rely entirely on your own perception."
     m_Metadata:
       m_Items: []
   - m_Id: 785569239040
@@ -107,7 +104,10 @@ MonoBehaviour:
       to see a wider area but may increase distortion and motion sickness.
 
       Lower
-      values narrow your view but provide a more stable and focused image.'
+      values narrow the view but provide a more stable and focused image.
+
+      Note:
+      Higher FOV values may cause the arm model to appear distorted.'
     m_Metadata:
       m_Items: []
   - m_Id: 321027826733056

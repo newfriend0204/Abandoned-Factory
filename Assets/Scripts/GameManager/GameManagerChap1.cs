@@ -180,13 +180,40 @@ public class GameManagerChap1 : MonoBehaviour {
     }
 
     public void Pressable(int mode) {
+        string keyLabel = GetInteractKeyLabel();
+
         if (mode == 1)
-            getText.text = "누르기(F)";
+            getText.text = $"누르기({keyLabel})";
         else if (mode == 2)
-            getText.text = "조사하기(F)";
+            getText.text = $"조사하기({keyLabel})";
         else if (mode == 3)
-            getText.text = "돌리기(F)";
+            getText.text = $"돌리기({keyLabel})";
         pressablePinged = true;
+    }
+
+    private string GetInteractKeyLabel() {
+        string fallback = "F";
+
+        var ism = InputSettingsManager.Instance;
+        if (ism == null)
+            return fallback;
+
+        KeyCode primary = ism.GetPrimaryKey("Interact");
+        KeyCode secondary = ism.GetSecondaryKey("Interact");
+
+        if (primary == KeyCode.None && secondary == KeyCode.None)
+            return fallback;
+
+        System.Collections.Generic.List<string> parts = new System.Collections.Generic.List<string>();
+        if (primary != KeyCode.None)
+            parts.Add(ism.FormatKeyName(primary));
+        if (secondary != KeyCode.None)
+            parts.Add(ism.FormatKeyName(secondary));
+
+        if (parts.Count == 0)
+            return fallback;
+
+        return string.Join(", ", parts);
     }
 
     public void Inspect(string sourceName) {

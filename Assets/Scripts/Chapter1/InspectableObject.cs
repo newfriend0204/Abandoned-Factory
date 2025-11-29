@@ -1,7 +1,4 @@
 ﻿using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 [DisallowMultipleComponent]
 public class InspectableObject : MonoBehaviour {
@@ -54,6 +51,8 @@ public class InspectableObject : MonoBehaviour {
     }
 
     private void Update() {
+        bool hintsOn = IsInteractHintOn();
+
         Vector3 playerPos = _playerCached.position;
         Vector3 targetPoint = (_childBox != null)
             ? _childBox.bounds.ClosestPoint(playerPos)
@@ -63,8 +62,9 @@ public class InspectableObject : MonoBehaviour {
         bool within = dist <= range;
 
         if (_childOutline != null) {
-            _childOutline.enabled = within;
+            _childOutline.enabled = hintsOn && within;
         }
+
         bool withinInteract = dist <= interactRange;
         if (!withinInteract || viewCamera == null || _childBox == null || gameManager == null) {
             return;
@@ -98,21 +98,31 @@ public class InspectableObject : MonoBehaviour {
         }
 
         if (withinInteract && isLooking) {
-            gameManager.Pressable(2);
+            if (hintsOn)
+                gameManager.Pressable(2);
 
-            bool fPressed = false;
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame) {
-                fPressed = true;
-            }
-#endif
-            if (Input.GetKeyDown(KeyCode.F)) {
-                fPressed = true;
-            }
+            bool interactPressed = IsInteractPressed();
 
-            if (fPressed) {
+            if (interactPressed) {
                 gameManager.Inspect(gameObject.name);
             }
         }
+    }
+
+    private bool IsInteractPressed() {
+        if (Mathf.Approximately(Time.timeScale, 0f))
+            return false;
+
+        var input = InputSettingsManager.Instance;
+        return input != null && input.GetKeyDown("Interact");
+    }
+
+    private bool IsInteractHintOn() {
+        var sm = SettingsManager.Instance;
+        if (sm == null)
+            return true;
+
+        int v = sm.GetInt("InteractHint", 0);
+        return v == 0;
     }
 }

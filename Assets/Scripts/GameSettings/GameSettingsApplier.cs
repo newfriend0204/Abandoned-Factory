@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Localization;
@@ -27,6 +28,13 @@ public class GameSettingsApplier : MonoBehaviour {
 
     [Header("Background Audio")]
     public bool playInBackgroundDefault = true;
+
+    [Header("Audio Mixer")]
+    public AudioMixer masterMixer;
+    public string masterVolumeParam = "MasterVolume";
+    public string bgmVolumeParam = "BgmVolume";
+    public string sfxVolumeParam = "SfxVolume";
+    public string ambientVolumeParam = "AmbientVolume";
 
     private Bloom _bloom;
     private MotionBlur _motionBlur;
@@ -108,6 +116,7 @@ public class GameSettingsApplier : MonoBehaviour {
         ApplyCrosshair();
         ApplyLanguage();
         ApplyPlayInBackground();
+        ApplyAudioVolumes();
     }
 
     public void ApplyWindowModeAndResolution() {
@@ -336,5 +345,50 @@ public class GameSettingsApplier : MonoBehaviour {
         bool run = (value == 0);
 
         Application.runInBackground = run;
+    }
+
+    // ------------------------------------------------
+    //  오디오 볼륨 (0~100 정수)
+    //  MasterVolume, BgmVolume, SfxVolume, AmbientVolume
+    // ------------------------------------------------
+    public void ApplyAudioVolumes() {
+        if (masterMixer == null) {
+            return;
+        }
+
+        int master = SettingsManager.Instance.GetInt("MasterVolume", 100);
+        int bgm = SettingsManager.Instance.GetInt("BgmVolume", 100);
+        int sfx = SettingsManager.Instance.GetInt("SfxVolume", 100);
+        int ambient = SettingsManager.Instance.GetInt("AmbientVolume", 100);
+
+        float masterDb = ToDecibel(master);
+        float bgmDb = ToDecibel(bgm);
+        float sfxDb = ToDecibel(sfx);
+        float ambientDb = ToDecibel(ambient);
+
+        if (!string.IsNullOrEmpty(masterVolumeParam)) {
+            masterMixer.SetFloat(masterVolumeParam, masterDb);
+        }
+
+        if (!string.IsNullOrEmpty(bgmVolumeParam)) {
+            masterMixer.SetFloat(bgmVolumeParam, bgmDb);
+        }
+
+        if (!string.IsNullOrEmpty(sfxVolumeParam)) {
+            masterMixer.SetFloat(sfxVolumeParam, sfxDb);
+        }
+
+        if (!string.IsNullOrEmpty(ambientVolumeParam)) {
+            masterMixer.SetFloat(ambientVolumeParam, ambientDb);
+        }
+    }
+
+    private float ToDecibel(int volumePercent) {
+        if (volumePercent <= 0) {
+            return -80f;
+        }
+
+        float v = volumePercent / 100f;
+        return Mathf.Log10(v) * 20f;
     }
 }
