@@ -739,15 +739,11 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
-    // -------------------------
-    //  Keybinding Helper들
-    // -------------------------
     private bool IsActionPressed(string actionId) {
         if (inputSettingsManager != null) {
             return inputSettingsManager.GetKey(actionId);
         }
 
-        // 폴백: InputSettingsManager 가 전혀 없을 때만 기본 키 사용
         if (actionId == "MoveForward") return Input.GetKey(KeyCode.W);
         if (actionId == "MoveBackward") return Input.GetKey(KeyCode.S);
         if (actionId == "MoveLeft") return Input.GetKey(KeyCode.A);
@@ -788,5 +784,35 @@ public class PlayerController : MonoBehaviour {
         if (IsActionPressed(positiveAction)) v += 1f;
         if (IsActionPressed(negativeAction)) v -= 1f;
         return Mathf.Clamp(v, -1f, 1f);
+    }
+
+    public void ExportCheckpointData(out Vector3 pos, out Quaternion rot, out float pitchOut,
+                                     out float stamina, out bool exhausted) {
+        pos = transform.position;
+        rot = transform.rotation;
+        pitchOut = pitch;
+        stamina = sprintStamina;
+        exhausted = isExhausted;
+    }
+
+    public void ImportCheckpointData(Vector3 pos, Quaternion rot, float pitchIn,
+                                     float stamina, bool exhausted) {
+        if (rb != null) {
+            rb.position = pos;
+            rb.linearVelocity = Vector3.zero;
+        }
+
+        transform.position = pos;
+        transform.rotation = rot;
+
+        pitch = pitchIn;
+        if (playerCamera != null) {
+            Vector3 euler = playerCamera.transform.localEulerAngles;
+            euler.x = pitchIn;
+            playerCamera.transform.localEulerAngles = euler;
+        }
+
+        sprintStamina = Mathf.Clamp(stamina, 0f, sprintStaminaMax);
+        isExhausted = exhausted;
     }
 }

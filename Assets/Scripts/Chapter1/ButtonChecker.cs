@@ -196,4 +196,49 @@ public class ButtonChecker : MonoBehaviour {
         int v = sm.GetInt("InteractHint", 0);
         return v == 0;
     }
+
+    public void RestoreFromCheckpoint(GameManagerChap1.ChapState chapState) {
+        switch (chapState) {
+            case GameManagerChap1.ChapState.Idle:
+                isActivated = false;
+                shutterPlayed = false;
+                SetIndicatorIdle();
+                break;
+
+            case GameManagerChap1.ChapState.Hunting:
+                isActivated = true;
+                shutterPlayed = false;
+                SetIndicatorHunting();
+                break;
+
+            case GameManagerChap1.ChapState.Completed:
+                isActivated = true;
+                shutterPlayed = false;
+                SetIndicatorCompleted();
+                break;
+
+            case GameManagerChap1.ChapState.ShutterOpened:
+            case GameManagerChap1.ChapState.PowerRestoring:
+            case GameManagerChap1.ChapState.MainPowerRestored:
+                ForceShutterInstantOpen();
+                break;
+        }
+    }
+
+    public void ForceShutterInstantOpen() {
+        if (shutter == null)
+            return;
+
+        float targetScaleY = 0.1f;
+        Vector3 targetPos = shutter.localPosition + new Vector3(0f, 5f, 0f);
+
+        var s = shutter.localScale;
+        s.y = targetScaleY;
+        shutter.localScale = s;
+        shutter.localPosition = targetPos;
+
+        isActivated = true;
+        shutterPlayed = true;
+        SetIndicatorCompleted();
+    }
 }

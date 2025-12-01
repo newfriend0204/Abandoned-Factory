@@ -26,6 +26,7 @@ public class LightOut : MonoBehaviour {
 
     [Header("GameManager")]
     public GameManagerChap1 gameManager;
+    public int auxIndex = 2;
 
     [Header("FX")]
     public float neighborRippleDelay = 0.03f;
@@ -51,15 +52,27 @@ public class LightOut : MonoBehaviour {
     }
 
     void Start() {
-        GenerateSolvableStart();
-        UpdateStatusLight(AreAllOn());
+        if (gameManager != null && gameManager.IsAuxOn(auxIndex)) {
+            isCleared = true;
+            ResetAll(true);
+            UpdateStatusLight(true);
+            LockAllNodesInteraction(true);
+        } else {
+            GenerateSolvableStart();
+            UpdateStatusLight(AreAllOn());
+        }
     }
 
     void Update() {
+        if (!isCleared && gameManager != null && gameManager.IsAuxOn(auxIndex)) {
+            isCleared = true;
+            ResetAll(true);
+            UpdateStatusLight(true);
+            LockAllNodesInteraction(true);
+        }
         if (isCleared)
             return;
 
-        // 일시정지 상태에서는 입력(클릭/힌트/정답) 전부 무시
         if (Mathf.Approximately(Time.timeScale, 0f))
             return;
 

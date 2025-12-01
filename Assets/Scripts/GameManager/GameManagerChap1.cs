@@ -252,7 +252,7 @@ public class GameManagerChap1 : MonoBehaviour {
 
     private void HideGetOnce() {
         if (getAnimRoutine != null)
-            StopCoroutine(getAnimRoutine);
+            StopCoroutine(getAnimRoutine);  
         getAnimRoutine = StartCoroutine(CoHideGet());
     }
 
@@ -372,13 +372,20 @@ public class GameManagerChap1 : MonoBehaviour {
         }
     }
 
+    public int GetAuxPowerState(int index) {
+        NormalizeAuxStates();
+        if (index < 0 || index >= auxPowerStates.Count)
+            return 0;
+        return auxPowerStates[index];
+    }
+
     private void Update() {
         ApplyAuxColors();
     }
 
     private void Start() {
-        state = ChapState.PowerRestoring;
-        Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
+        //state = ChapState.PowerRestoring;
+        //Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
     }
 
     public void NorthEasternAreaHintAvailable() {
@@ -497,6 +504,97 @@ public class GameManagerChap1 : MonoBehaviour {
             node.light.enabled = true;
             node.audio.Play();
             yield return new WaitForSeconds(lampStepInterval);
+        }
+    }
+
+    private void ForceAllStreetLampsOnInstant() {
+        for (int i = 0; i < streetLamps.Count; i++) {
+            var node = streetLamps[i];
+
+            if (node.light != null)
+                node.light.enabled = true;
+
+            if (node.audio != null && node.audio.isPlaying)
+                node.audio.Stop();
+        }
+    }
+
+    public void ImportCheckpointData(int chapStateInt, int[] auxStates, bool[] pipeSolvedFlags) {
+        state = (ChapState)chapStateInt;
+
+        NormalizeAuxStates();
+        if (auxStates != null) {
+            int n = Mathf.Min(4, auxStates.Length);
+            for (int i = 0; i < n; i++) {
+                auxPowerStates[i] = auxStates[i];
+            }
+        }
+
+        for (int i = 0; i < partSolved.Length; i++) {
+            partSolved[i] = false;
+        }
+
+        if (pipeSolvedFlags != null) {
+            int n = Mathf.Min(partSolved.Length, pipeSolvedFlags.Length);
+            for (int i = 0; i < n; i++) {
+                partSolved[i] = pipeSolvedFlags[i];
+            }
+        }
+
+        bool allPuzzleSolved = AllPartsSolved();
+
+        if (auxPowerStates[3] == 1 && !allPuzzleSolved) {
+            for (int i = 0; i < partSolved.Length; i++) {
+                partSolved[i] = true;
+            }
+            allPuzzleSolved = true;
+        } else if (auxPowerStates[3] == 0 && allPuzzleSolved) {
+            auxPowerStates[3] = 1;
+        }
+
+        ApplyAuxColors();
+        ApplyPipePartLights();
+        RestorePipePuzzlePiecesFromSolvedState();
+
+        if (state == ChapState.MainPowerRestored) {
+            ForceAllStreetLampsOnInstant();
+        }
+
+        var checker = FindFirstObjectByType<ButtonChecker>();
+        if (checker != null) {
+            checker.RestoreFromCheckpoint(state);
+        }
+    }
+
+    public void ExportCheckpointData(out int chapStateInt, out int[] auxStates, out bool[] pipeSolvedFlags) {
+        chapStateInt = (int)state;
+
+        NormalizeAuxStates();
+        auxStates = new int[4];
+        for (int i = 0; i < 4; i++) {
+            auxStates[i] = auxPowerStates[i];
+        }
+
+        pipeSolvedFlags = new bool[partSolved.Length];
+        for (int i = 0; i < partSolved.Length; i++) {
+            pipeSolvedFlags[i] = partSolved[i];
+        }
+    }
+
+    public void RestorePipePuzzlePiecesFromSolvedState() {
+        foreach (var kvp in piecesByPart) {
+            int partIndex = kvp.Key;
+            bool solved = IsPipePartSolved(partIndex);
+            if (!solved)
+                continue;
+
+            var list = kvp.Value;
+            for (int i = 0; i < list.Count; i++) {
+                var piece = list[i];
+                if (piece != null) {
+                    piece.CaptureCorrectWithoutRandomize();
+                }
+            }
         }
     }
 }

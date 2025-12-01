@@ -189,4 +189,15 @@ public class PipePiece : MonoBehaviour {
         int v = sm.GetInt("InteractHint", 0);
         return v == 0;
     }
+
+    public void CaptureCorrectWithoutRandomize() {
+        if (!_captured) {
+            _baseRot = transform.localRotation;
+            _correctStep = 0;
+            _captured = true;
+        }
+
+        _step = _correctStep;
+        ApplyStepToTransform(_step);
+    }
 }

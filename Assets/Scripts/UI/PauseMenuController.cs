@@ -40,6 +40,10 @@ public class PauseMenuController : MonoBehaviour {
 
     Action pendingAction = null;
 
+    void Awake() {
+        inputSettingsManager = InputSettingsManager.Instance;
+    }
+
     void Start() {
         Time.timeScale = 1f;
 
@@ -162,7 +166,15 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     public void OnClickCheckpoint() {
-        Debug.Log("[PauseMenu] Checkpoint button pressed");
+        var mgr = Chap1CheckpointManager.Instance;
+        if (mgr == null || !mgr.HasCheckpoint) {
+            Debug.LogWarning("[PauseMenu] 사용할 체크포인트가 없습니다.");
+            return;
+        }
+
+        ResumeGame();
+
+        mgr.LoadLastCheckpoint();
     }
 
     public void OnClickQuit() {
