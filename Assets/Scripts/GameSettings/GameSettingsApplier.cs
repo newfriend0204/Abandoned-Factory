@@ -53,7 +53,6 @@ public class GameSettingsApplier : MonoBehaviour {
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
 
         _originalShadowQuality = QualitySettings.shadows;
         _originalShadowResolution = QualitySettings.shadowResolution;

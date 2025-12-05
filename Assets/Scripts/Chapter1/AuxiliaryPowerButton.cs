@@ -64,26 +64,37 @@ public class AuxiliaryPowerButton : MonoBehaviour {
         if (gameManager == null || player == null)
             return;
 
-        bool inPowerRestoring = (gameManager.State == GameManagerChap1.ChapState.PowerRestoring);
         float distPlayerToBtn = Vector3.Distance(player.position, transform.position);
         bool within = distPlayerToBtn <= interactDistance;
 
         bool isLooking = true;
         if (requireLook) {
             isLooking = false;
-            float rayLen = Mathf.Max(Vector3.Distance(viewCamera.transform.position, transform.position) + 0.75f, 3f);
+
+            float rayLen = Mathf.Max(
+                Vector3.Distance(viewCamera.transform.position, transform.position) + 0.75f,
+                3f
+            );
+
             RaycastHit hit;
-            if (Physics.Raycast(viewCamera.transform.position, viewCamera.transform.forward, out hit, rayLen, lookMask, QueryTriggerInteraction.Ignore)) {
+            if (Physics.Raycast(
+                    viewCamera.transform.position,
+                    viewCamera.transform.forward,
+                    out hit,
+                    rayLen,
+                    lookMask,
+                    QueryTriggerInteraction.Ignore)) {
                 isLooking = IsOurCollider(hit.collider);
             }
         }
 
         bool auxOn = gameManager.IsAuxOn(auxIndex);
-        bool canPress = inPowerRestoring && !auxOn && within && (!requireLook || isLooking);
+
+        bool canPress = !auxOn && within && (!requireLook || isLooking);
         bool showHints = IsInteractHintOn();
 
         if (outline != null)
-            outline.enabled = showHints && inPowerRestoring && !auxOn && within;
+            outline.enabled = showHints && !auxOn && within;
 
         if (canPress && showHints)
             gameManager.Pressable(1);
@@ -97,6 +108,10 @@ public class AuxiliaryPowerButton : MonoBehaviour {
             gameManager.SetAuxState(auxIndex, 1);
             SyncIndicator();
             PlayPress();
+
+            var cpMgr = Chap1CheckpointManager.Instance;
+            if (cpMgr != null)
+                cpMgr.SaveCheckpointAtCurrentPosition();
         } else if (auxOn && within && (!requireLook || isLooking)) {
             PlayPress();
         }

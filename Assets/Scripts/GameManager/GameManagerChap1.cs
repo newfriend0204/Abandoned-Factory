@@ -73,6 +73,9 @@ public class GameManagerChap1 : MonoBehaviour {
 
     private AudioSource _pipeAudio;
 
+    private bool pipeAllCheckpointSaved = false;
+    private bool streetLampCheckpointSaved = false;
+
     [System.Serializable]
     private struct StreetLampNode {
         public Light light;
@@ -177,6 +180,11 @@ public class GameManagerChap1 : MonoBehaviour {
 
     public void SealShutterOpened() {
         state = ChapState.ShutterOpened;
+
+        var cpMgr = Chap1CheckpointManager.Instance;
+        if (cpMgr != null) {
+            cpMgr.SaveCheckpointAtCurrentPosition();
+        }
     }
 
     public void Pressable(int mode) {
@@ -384,8 +392,8 @@ public class GameManagerChap1 : MonoBehaviour {
     }
 
     private void Start() {
-        //state = ChapState.PowerRestoring;
-        //Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
+        state = ChapState.PowerRestoring;
+        Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
     }
 
     public void NorthEasternAreaHintAvailable() {
@@ -435,6 +443,13 @@ public class GameManagerChap1 : MonoBehaviour {
         if (AllPartsSolved()) {
             auxPowerStates[3] = 1;
             ApplyAuxColors();
+
+            if (!pipeAllCheckpointSaved) {
+                var cpMgr = Chap1CheckpointManager.Instance;
+                if (cpMgr != null)
+                    cpMgr.SaveCheckpointAtCurrentPosition();
+                pipeAllCheckpointSaved = true;
+            }
         }
     }
 
@@ -505,7 +520,15 @@ public class GameManagerChap1 : MonoBehaviour {
             node.audio.Play();
             yield return new WaitForSeconds(lampStepInterval);
         }
+
+        if (!streetLampCheckpointSaved) {
+            var cpMgr = Chap1CheckpointManager.Instance;
+            if (cpMgr != null)
+                cpMgr.SaveCheckpointAtCurrentPosition();
+            streetLampCheckpointSaved = true;
+        }
     }
+
 
     private void ForceAllStreetLampsOnInstant() {
         for (int i = 0; i < streetLamps.Count; i++) {

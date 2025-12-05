@@ -62,7 +62,6 @@ public class InputSettingsManager : MonoBehaviour {
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
 
         keyBindingFilePath = Path.Combine(Application.persistentDataPath, keyBindingFileName);
 

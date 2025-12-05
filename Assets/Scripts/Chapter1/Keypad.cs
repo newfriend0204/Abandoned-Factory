@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
@@ -24,6 +24,8 @@ public class Keypad : MonoBehaviour {
     private AudioSource audioSource;
     private List<int> auxList;
     private readonly List<char> buffer = new List<char>(4);
+
+    private bool checkpointSaved = false;
 
     private void Awake() {
         gm = FindFirstObjectByType<GameManagerChap1>();
@@ -80,11 +82,20 @@ public class Keypad : MonoBehaviour {
         if (typed == correctCode) {
             if (auxList[1] == 0)
                 auxList[1] = 1;
+
             UpdateLightByState();
+
             if (successSfx)
                 audioSource.PlayOneShot(successSfx, successVol);
             if (clearOnSuccess)
                 Clear();
+
+            if (!checkpointSaved) {
+                var cpMgr = Chap1CheckpointManager.Instance;
+                if (cpMgr != null)
+                    cpMgr.SaveCheckpointAtCurrentPosition();
+                checkpointSaved = true;
+            }
         } else {
             if (wrongSfx)
                 audioSource.PlayOneShot(wrongSfx, wrongVol);

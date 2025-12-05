@@ -44,6 +44,8 @@ public class LightOut : MonoBehaviour {
     private bool firstPressed = false;
     private bool hintUnlocked = false;
 
+    private bool checkpointSaved = false;
+
     void Awake() {
         if (gameManager == null)
             gameManager = FindFirstObjectByType<GameManagerChap1>();
@@ -152,6 +154,13 @@ public class LightOut : MonoBehaviour {
 
             LockAllNodesInteraction(true);
             StartCoroutine(CameraShake(0.2f, 0.05f));
+
+            if (!checkpointSaved) {
+                var cpMgr = Chap1CheckpointManager.Instance;
+                if (cpMgr != null)
+                    cpMgr.SaveCheckpointAtCurrentPosition();
+                checkpointSaved = true;
+            }
         }
     }
 

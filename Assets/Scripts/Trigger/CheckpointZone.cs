@@ -12,7 +12,22 @@ public class CheckpointZone : MonoBehaviour {
     [Header("Options")]
     public bool saveOnlyOnce = true;
 
+    [Header("ID")]
+    public string checkpointId;
+
     private bool hasSaved = false;
+
+    private void Awake() {
+        if (string.IsNullOrEmpty(checkpointId))
+            checkpointId = gameObject.name;
+    }
+
+    private void Start() {
+        var mgr = Chap1CheckpointManager.Instance;
+        if (mgr != null && mgr.IsCheckpointZoneConsumed(checkpointId)) {
+            hasSaved = true;
+        }
+    }
 
     private void Reset() {
         var col = GetComponent<Collider>();
@@ -35,6 +50,8 @@ public class CheckpointZone : MonoBehaviour {
             return;
 
         var mgr = Chap1CheckpointManager.Instance;
+        if (mgr == null)
+            return;
 
         if (respawnPoint != null) {
             mgr.SaveCheckpointAtSpawnPoint(respawnPoint);
@@ -43,5 +60,7 @@ public class CheckpointZone : MonoBehaviour {
         }
 
         hasSaved = true;
+
+        mgr.MarkCheckpointZoneConsumed(checkpointId);
     }
 }
