@@ -68,6 +68,10 @@ public class GameManagerChap1 : MonoBehaviour {
     [Header("Broadcast Announcer UI")]
     public BroadcastAnnouncerUI announcer;
 
+    [Header("Tutorial")]
+    public TutorialHintUI tutorialUI;
+    public float puzzleTutorialDuration = 6f;
+
     private readonly Dictionary<int, List<PipePiece>> piecesByPart = new Dictionary<int, List<PipePiece>>();
     private readonly bool[] partSolved = new bool[3];
 
@@ -196,6 +200,8 @@ public class GameManagerChap1 : MonoBehaviour {
             getText.text = $"조사하기({keyLabel})";
         else if (mode == 3)
             getText.text = $"돌리기({keyLabel})";
+        else if (mode == 4)
+            getText.text = $"줍기({keyLabel})";
         pressablePinged = true;
     }
 
@@ -399,6 +405,7 @@ public class GameManagerChap1 : MonoBehaviour {
     public void NorthEasternAreaHintAvailable() {
         announcer.ShowBroadcast("주의: 서부 남쪽 구역에서 이상 신호 감지.");
         monologue.ShowMessage("뭔가 답을 알 것 같은데.", monologue.defaultVisibleDuration, false);
+        tutorialUI.ShowTutorial(2, puzzleTutorialDuration);
     }
 
     private void InitializePipePuzzle() {

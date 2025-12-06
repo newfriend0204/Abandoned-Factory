@@ -11,6 +11,9 @@ public class HeadlampController : MonoBehaviour {
     public KeyCode toggleKey = KeyCode.R;
     public bool startOn = false;
 
+    [Header("Gameplay")]
+    public bool canUseHeadlamp = false;
+
     public float onIntensity = 2.5f;
     public float fadeTime = 0.12f;
 
@@ -65,6 +68,12 @@ public class HeadlampController : MonoBehaviour {
     }
 
     void Update() {
+        if (!canUseHeadlamp) {
+            headlamp.enabled = false;
+            headlamp.intensity = 0f;
+            return;
+        }
+
         if (!Mathf.Approximately(Time.timeScale, 0f)) {
             bool togglePressed = false;
 

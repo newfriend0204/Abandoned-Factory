@@ -19,6 +19,8 @@ public class Chap1CheckpointManager : MonoBehaviour {
         public bool[] pipeSolved;
 
         public List<string> consumedCheckpointZoneIds;
+
+        public bool hasHeadlamp;
     }
 
     public static Chap1CheckpointManager Instance { get; private set; }
@@ -83,6 +85,7 @@ public class Chap1CheckpointManager : MonoBehaviour {
     private void SaveInternal(bool useSpawnPoint, Transform spawnPoint) {
         var player = FindFirstObjectByType<PlayerController>();
         var gm = FindFirstObjectByType<GameManagerChap1>();
+        var head = FindFirstObjectByType<HeadlampController>();
 
         if (current == null)
             current = new CheckpointData();
@@ -117,6 +120,8 @@ public class Chap1CheckpointManager : MonoBehaviour {
         current.chapStateInt = chapStateInt;
         current.auxPowerStates = auxStates;
         current.pipeSolved = pipeSolved;
+
+        current.hasHeadlamp = (head != null && head.canUseHeadlamp);
 
         if (current.consumedCheckpointZoneIds == null)
             current.consumedCheckpointZoneIds = new List<string>(consumedCheckpointZoneIds);
@@ -222,6 +227,18 @@ public class Chap1CheckpointManager : MonoBehaviour {
             );
         } else {
             Debug.LogWarning("[Chap1CheckpointManager] GameManagerChap1 를 찾지 못해 진행도 복원 실패");
+        }
+
+        var head = FindFirstObjectByType<HeadlampController>();
+        if (head != null) {
+            head.canUseHeadlamp = current.hasHeadlamp;
+        }
+
+        if (current.hasHeadlamp) {
+            var pickup = FindFirstObjectByType<HeadlampPickup>();
+            if (pickup != null) {
+                pickup.RestorePickedStateFromCheckpoint();
+            }
         }
 
         if (current.consumedCheckpointZoneIds != null) {

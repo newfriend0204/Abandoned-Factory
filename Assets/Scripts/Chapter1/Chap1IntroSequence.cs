@@ -45,8 +45,12 @@ public class Chap1IntroSequence : MonoBehaviour {
     public float vignetteStep1Duration = 0.4f;
     public float vignetteStep2Duration = 0.3f;
     public float vignetteStep3Duration = 0.6f;
-
     public float fadeOutDuration = 1.8f;
+
+    [Header("Tutorial")]
+    public TutorialHintUI tutorialUI;
+    public float moveTutorialDuration = 5f;
+
 
     Vector3 originalCamPos;
     Quaternion originalCamRot;
@@ -138,6 +142,8 @@ public class Chap1IntroSequence : MonoBehaviour {
 
         if (playerController != null)
             playerController.enabled = true;
+
+        tutorialUI.ShowTutorial(0, moveTutorialDuration);
     }
 
     IEnumerator MoveCamera(Transform cam,
