@@ -167,6 +167,10 @@ MonoBehaviour:
     m_Key: UNSAVEDCHANGES_SUMMARY
     m_Metadata:
       m_Items: []
+  - m_Id: 3646432813993984
+    m_Key: CHECKPOINT_WARNING
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class PauseMenuController : MonoBehaviour {
@@ -34,11 +35,22 @@ public class PauseMenuController : MonoBehaviour {
     [Header("Save Screen")]
     public GameObject saveScreenRoot;
 
+    [Header("Move Check")]
+    public GameObject moveCheckRoot;
+
     bool isPaused = false;
     bool hasUnsavedChanges = false;
     bool isUsingDefaultSummary = true;
 
     Action pendingAction = null;
+
+    enum MoveRequest {
+        None,
+        ToCheckpoint,
+        ToMainMenu
+    }
+
+    MoveRequest currentMoveRequest = MoveRequest.None;
 
     void Awake() {
         inputSettingsManager = InputSettingsManager.Instance;
@@ -53,6 +65,9 @@ public class PauseMenuController : MonoBehaviour {
 
         if (saveScreenRoot != null)
             saveScreenRoot.SetActive(false);
+
+        if (moveCheckRoot != null)
+            moveCheckRoot.SetActive(false);
 
         ShowGeneralPanel();
         SetActiveTab(generalTabButton);
@@ -73,11 +88,14 @@ public class PauseMenuController : MonoBehaviour {
             ClearSummary();
     }
 
-
     void Update() {
+        if (Chap1DeathManager.Instance != null && Chap1DeathManager.Instance.IsDead)
+            return;
+
         if (Input.GetKeyDown(KeyCode.Escape))
             OnPressEscape();
     }
+
 
     public void MarkSettingChanged() {
         hasUnsavedChanges = true;
@@ -88,7 +106,6 @@ public class PauseMenuController : MonoBehaviour {
             return;
 
         isUsingDefaultSummary = false;
-
         summaryText.text = text;
     }
 
@@ -147,7 +164,11 @@ public class PauseMenuController : MonoBehaviour {
         if (saveScreenRoot != null)
             saveScreenRoot.SetActive(false);
 
+        if (moveCheckRoot != null)
+            moveCheckRoot.SetActive(false);
+
         pendingAction = null;
+        currentMoveRequest = MoveRequest.None;
     }
 
     public void OnClickContinue() {
@@ -172,13 +193,12 @@ public class PauseMenuController : MonoBehaviour {
             return;
         }
 
-        ResumeGame();
-
-        mgr.LoadLastCheckpoint();
+        OpenMoveCheck(MoveRequest.ToCheckpoint);
     }
 
     public void OnClickQuit() {
         Debug.Log("[PauseMenu] Quit button pressed");
+        OpenMoveCheck(MoveRequest.ToMainMenu);
     }
 
     public void OnClickBack() {
@@ -193,7 +213,6 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     public void OnClickSave() {
-
         if (SettingsManager.Instance != null)
             SettingsManager.Instance.SaveToFile();
 
@@ -440,5 +459,65 @@ public class PauseMenuController : MonoBehaviour {
             saveScreenRoot.SetActive(false);
 
         pendingAction = null;
+    }
+
+    void OpenMoveCheck(MoveRequest request) {
+        currentMoveRequest = request;
+
+        if (moveCheckRoot != null) {
+            moveCheckRoot.SetActive(true);
+        }
+    }
+
+    void ExecuteMoveRequest() {
+        switch (currentMoveRequest) {
+            case MoveRequest.ToCheckpoint:
+                ExecuteMoveToCheckpoint();
+                break;
+            case MoveRequest.ToMainMenu:
+                ExecuteMoveToMainMenu();
+                break;
+        }
+
+        currentMoveRequest = MoveRequest.None;
+    }
+
+    void ExecuteMoveToCheckpoint() {
+        var mgr = Chap1CheckpointManager.Instance;
+        if (mgr == null || !mgr.HasCheckpoint) {
+            Debug.LogWarning("[PauseMenu] 사용할 체크포인트가 없습니다.");
+            return;
+        }
+
+        ResumeGame();
+        mgr.LoadLastCheckpoint();
+    }
+
+    void ExecuteMoveToMainMenu() {
+        Time.timeScale = 1f;
+        isPaused = false;
+
+        if (pauseRoot != null) pauseRoot.SetActive(false);
+        if (pauseScreenRoot != null) pauseScreenRoot.SetActive(false);
+        if (settingsScreenRoot != null) settingsScreenRoot.SetActive(false);
+        if (saveScreenRoot != null) saveScreenRoot.SetActive(false);
+
+        pendingAction = null;
+
+        SceneManager.LoadScene("MainScreen");
+    }
+
+    public void OnClickMoveCheckProceed() {
+        if (moveCheckRoot != null)
+            moveCheckRoot.SetActive(false);
+
+        ExecuteMoveRequest();
+    }
+
+    public void OnClickMoveCheckCancel() {
+        if (moveCheckRoot != null)
+            moveCheckRoot.SetActive(false);
+
+        currentMoveRequest = MoveRequest.None;
     }
 }

@@ -283,6 +283,14 @@ MonoBehaviour:
       \"{2}\"\uB85C \uC774\uB3D9\uB428."
     m_Metadata:
       m_Items: []
+  - m_Id: 3660414220193792
+    m_Localized: "\uC9C4\uD589(\uBCC0\uACBD \uC0AC\uD56D \uD3D0\uAE30)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660843398156288
+    m_Localized: "\uCDE8\uC18C"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

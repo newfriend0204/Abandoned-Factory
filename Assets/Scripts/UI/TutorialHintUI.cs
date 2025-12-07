@@ -56,7 +56,11 @@ public class TutorialHintUI : MonoBehaviour {
                     GetActionKeyLabel(ism, "MoveForward") + " : 앞으로 이동\n" +
                     GetActionKeyLabel(ism, "MoveBackward") + " : 뒤로 이동\n" +
                     GetActionKeyLabel(ism, "MoveLeft") + " : 왼쪽으로 이동\n" +
-                    GetActionKeyLabel(ism, "MoveRight") + " : 오른쪽으로 이동";
+                    GetActionKeyLabel(ism, "MoveRight") + " : 오른쪽으로 이동\n" +
+                    GetActionKeyLabel(ism, "Jump") + " : 점프\n" +
+                    GetActionKeyLabel(ism, "Run") + " : 달리기\n" +
+                    GetActionKeyLabel(ism, "Interact") + " : 상호작용\n" +
+                    "ESC : 일시정지\n";
 
             case 1:
                 return

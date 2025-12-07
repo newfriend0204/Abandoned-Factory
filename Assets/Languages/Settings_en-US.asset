@@ -282,6 +282,14 @@ MonoBehaviour:
     m_Localized: '"{1}" previously assigned to "{0}" has been moved to "{2}".'
     m_Metadata:
       m_Items: []
+  - m_Id: 3660414220193792
+    m_Localized: Proceed (Discard Changes)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3660843398156288
+    m_Localized: Cancel
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

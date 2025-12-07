@@ -387,6 +387,11 @@ MonoBehaviour:
       Do you want to save them?'
     m_Metadata:
       m_Items: []
+  - m_Id: 3646432813993984
+    m_Localized: Proceeding with this action will discard all changes made after
+      the current checkpoint.
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
