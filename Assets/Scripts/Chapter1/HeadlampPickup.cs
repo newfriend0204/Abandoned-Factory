@@ -10,7 +10,7 @@ public class HeadlampPickup : MonoBehaviour {
     public HeadlampController headlampController;
 
     [Header("Outline")]
-    [SerializeField] private Behaviour outline;
+    [SerializeField] private Outline outline;
 
     [Header("Interact Distances")]
     public float outlineDistance = 7f;
@@ -38,10 +38,6 @@ public class HeadlampPickup : MonoBehaviour {
 
         if (viewCamera == null) {
             viewCamera = Camera.main;
-        }
-
-        if (outline == null) {
-            outline = GetComponentInChildren<Behaviour>();
         }
 
         targetCollider = GetComponentInChildren<MeshCollider>();

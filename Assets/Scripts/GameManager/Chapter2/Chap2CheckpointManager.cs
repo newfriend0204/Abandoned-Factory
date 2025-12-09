@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
-    public static Chap1CheckpointManager Instance { get; private set; }
+public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
+    public static Chap2CheckpointManager Instance { get; private set; }
 
     [Header("Fade")]
     public CanvasGroup fadeCanvasGroup;
@@ -16,8 +16,8 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
     public float checkpointHoldDuration = 4f;
 
     // ==== 런타임/공유 체크포인트 데이터 ====
-    private static Chap1CheckpointData sharedData;
-    private Chap1CheckpointData current;
+    private static Chap2CheckpointData sharedData;
+    private Chap2CheckpointData current;
     private bool isLoading = false;
 
     private Coroutine checkpointPopupRoutine;
@@ -26,17 +26,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
     public bool HasCheckpoint => current != null;
 
     private static bool autoLoadOnSceneStart = false;
-
-    private void Update() {
-        if (Time.timeScale == 0f) {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            return;
-        } else {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-    }
 
     private void Awake() {
         if (Instance != null && Instance != this) {
@@ -50,14 +39,18 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
         DontDestroyOnLoad(gameObject);
 
-        // 메인 메뉴에서 LoadSharedDataFromFile()를 미리 호출했으면 여기로 들어온다.
+        // 메인 메뉴에서 LoadSharedDataFromFile()를 미리 호출했으면 들어오는 데이터
         if (sharedData != null)
             current = sharedData;
 
-        // 혹시 SaveSystem.Current에 chap1 데이터가 올라와 있는 경우도 보정
-        if (current == null && SaveSystem.Current != null && SaveSystem.Current.chap1 != null &&
-            SaveSystem.Current.chap1.hasCheckpoint && SaveSystem.Current.chap1.last != null) {
-            current = SaveSystem.Current.chap1.last;
+        // 혹시 SaveSystem.Current에 chap2 데이터가 이미 올라와 있는 경우 보정
+        if (current == null &&
+            SaveSystem.Current != null &&
+            SaveSystem.Current.chap2 != null &&
+            SaveSystem.Current.chap2.hasCheckpoint &&
+            SaveSystem.Current.chap2.last != null) {
+
+            current = SaveSystem.Current.chap2.last;
         }
 
         if (current != null && current.consumedCheckpointZoneIds != null) {
@@ -65,6 +58,16 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         }
 
         FindSceneOverlays();
+    }
+
+    private void OnEnable() {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable() {
+        if (Instance == this) {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
     }
 
     private void OnDestroy() {
@@ -75,13 +78,32 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
             CheckpointService.Register(null);
     }
 
-    // === Save File (SaveSystem 위임) ===
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
+        if (Instance != this)
+            return;
 
-    public static bool HasSaveFile {
-        get {
-            return SaveSystem.HasFile;
+        FindSceneOverlays();
+
+        if (autoLoadOnSceneStart && current != null && scene.name == current.sceneName) {
+            autoLoadOnSceneStart = false;
+            StartCoroutine(CoApplyCheckpointOnSceneLoaded());
         }
     }
+
+    private IEnumerator CoApplyCheckpointOnSceneLoaded() {
+        isLoading = true;
+
+        // Start() 들이 한 프레임 돌아가도록 잠깐 기다렸다가 적용
+        yield return null;
+
+        ApplyCheckpointToScene();
+
+        isLoading = false;
+    }
+
+    // ==== SaveSystem 연동 (나중에 메인 메뉴에서 쓸 예정) ====
+
+    public static bool HasSaveFile => SaveSystem.HasFile;
 
     public static void SetAutoLoadOnSceneStart(bool value) {
         autoLoadOnSceneStart = value;
@@ -96,28 +118,25 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         }
     }
 
-    /// <summary>
-    /// 메인 메뉴에서 "이어하기"를 누를 때 호출.
-    /// SaveSystem를 통해 세이브 파일을 읽고, chap1 체크포인트를 sharedData에 올려둔다.
-    /// </summary>
     public static bool LoadSharedDataFromFile() {
         if (!SaveSystem.LoadFromDisk()) {
-            Debug.Log("[Chap1CheckpointManager] 저장된 세이브 파일이 없습니다.");
+            Debug.Log("[Chap2CheckpointManager] 저장된 세이브 파일이 없습니다.");
             sharedData = null;
             return false;
         }
 
         if (SaveSystem.Current == null ||
-            SaveSystem.Current.chap1 == null ||
-            !SaveSystem.Current.chap1.hasCheckpoint ||
-            SaveSystem.Current.chap1.last == null) {
-            Debug.LogWarning("[Chap1CheckpointManager] Chap1 세이브 데이터가 없습니다.");
+            SaveSystem.Current.chap2 == null ||
+            !SaveSystem.Current.chap2.hasCheckpoint ||
+            SaveSystem.Current.chap2.last == null) {
+
+            Debug.LogWarning("[Chap2CheckpointManager] Chap2 세이브 데이터가 없습니다.");
             sharedData = null;
             return false;
         }
 
-        sharedData = SaveSystem.Current.chap1.last;
-        Debug.Log("[Chap1CheckpointManager] 세이브 파일에서 Chap1 체크포인트 로드 완료.");
+        sharedData = SaveSystem.Current.chap2.last;
+        Debug.Log("[Chap2CheckpointManager] 세이브 파일에서 Chap2 체크포인트 로드 완료.");
         return true;
     }
 
@@ -131,19 +150,17 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         }
 
         if (SaveSystem.Current != null &&
-            SaveSystem.Current.chap1 != null &&
-            SaveSystem.Current.chap1.hasCheckpoint &&
-            SaveSystem.Current.chap1.last != null &&
-            !string.IsNullOrEmpty(SaveSystem.Current.chap1.last.sceneName)) {
-            return SaveSystem.Current.chap1.last.sceneName;
+            SaveSystem.Current.chap2 != null &&
+            SaveSystem.Current.chap2.hasCheckpoint &&
+            SaveSystem.Current.chap2.last != null &&
+            !string.IsNullOrEmpty(SaveSystem.Current.chap2.last.sceneName)) {
+
+            return SaveSystem.Current.chap2.last.sceneName;
         }
 
         return defaultSceneName;
     }
 
-    /// <summary>
-    /// Instance.current를 SaveSystem.Current.chap1 / player에 반영하고 파일로 저장.
-    /// </summary>
     private static void SaveSharedDataToFile() {
         if (Instance == null || Instance.current == null)
             return;
@@ -154,17 +171,17 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
         var data = SaveSystem.Current;
 
-        if (data.chap1 == null)
-            data.chap1 = new Chap1SaveData();
+        if (data.chap2 == null)
+            data.chap2 = new Chap2SaveData();
         if (data.player == null)
             data.player = new PlayerGlobalData();
 
-        data.currentChapter = 1; // 아직은 Chap1만 사용
+        data.currentChapter = 2; // Chap2 플레이 중
 
-        data.chap1.hasCheckpoint = true;
-        data.chap1.last = Instance.current;
+        data.chap2.hasCheckpoint = true;
+        data.chap2.last = Instance.current;
 
-        // 전역 플레이어 상태도 함께 저장 (나중에 Chap2에서 사용할 수 있음)
+        // 전역 플레이어 상태도 함께 저장
         data.player.hasHeadlamp = Instance.current.hasHeadlamp;
         data.player.savedSprintStamina = Instance.current.playerSprintStamina;
         data.player.savedIsExhausted = Instance.current.playerIsExhausted;
@@ -172,51 +189,7 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         SaveSystem.SaveToDisk();
     }
 
-    private void OnEnable() {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable() {
-        if (Instance == this) {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-        }
-    }
-
-    // 씬이 로드될 때마다 호출됨
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
-        // 혹시 다른 씬에서도 이 매니저를 쓴다고 해도, 우리는 Instance인 경우만 처리
-        if (Instance != this)
-            return;
-
-        // 새 씬의 FadeOverlay / SaveCheckPoint 다시 찾기
-        FindSceneOverlays();
-
-        // "메인 메뉴에서 이어하기"로 이 씬에 들어온 경우만 처리
-        if (autoLoadOnSceneStart && current != null && scene.name == current.sceneName) {
-            autoLoadOnSceneStart = false;
-
-            // 인트로는 한번 스킵
-            Chap1IntroSequence.skipIntroOnce = true;
-
-            // Start() 들이 한 프레임 돌고 난 다음에 적용되도록 코루틴
-            StartCoroutine(CoApplyCheckpointOnSceneLoaded());
-        }
-    }
-
-    private IEnumerator CoApplyCheckpointOnSceneLoaded() {
-        isLoading = true;
-
-        // 한 프레임 기다려서, ScenePlayerStateApplier / Intro 등 Start() 먼저 돌게 함
-        yield return null;
-
-        // 인트로 비활성화 시도 (있으면)
-        TryDisableIntroSequenceOnGameManager();
-
-        // 현재 씬에 체크포인트 데이터 반영 (위치, 회전, 스태미나, 헤드램프, 퍼즐 상태 등)
-        ApplyCheckpointToScene();
-
-        isLoading = false;
-    }
+    // ==== 체크포인트 저장/로드 ====
 
     public void SaveCheckpointAtCurrentPosition() {
         SaveInternal(false, null);
@@ -228,11 +201,15 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
     private void SaveInternal(bool useSpawnPoint, Transform spawnPoint) {
         var player = FindFirstObjectByType<PlayerController>();
-        var gm = FindFirstObjectByType<GameManagerChap1>();
         var head = FindFirstObjectByType<HeadlampController>();
 
+        if (player == null) {
+            Debug.LogWarning("[Chap2CheckpointManager] PlayerController를 찾지 못해 체크포인트 저장 실패");
+            return;
+        }
+
         if (current == null)
-            current = new Chap1CheckpointData();
+            current = new Chap2CheckpointData();
 
         current.sceneName = SceneManager.GetActiveScene().name;
 
@@ -256,15 +233,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         current.playerSprintStamina = stamina;
         current.playerIsExhausted = exhausted;
 
-        int chapStateInt;
-        int[] auxStates;
-        bool[] pipeSolved;
-        gm.ExportCheckpointData(out chapStateInt, out auxStates, out pipeSolved);
-
-        current.chapStateInt = chapStateInt;
-        current.auxPowerStates = auxStates;
-        current.pipeSolved = pipeSolved;
-
         current.hasHeadlamp = (head != null && head.canUseHeadlamp);
 
         if (current.consumedCheckpointZoneIds == null)
@@ -276,17 +244,17 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
         sharedData = current;
 
-        // SaveSystem로 디스크에 저장
+        // SaveSystem에 반영
         SaveSharedDataToFile();
 
-        Debug.Log($"[Chap1CheckpointManager] 체크포인트 저장 완료 (scene='{current.sceneName}')");
+        Debug.Log($"[Chap2CheckpointManager] 체크포인트 저장 완료 (scene='{current.sceneName}')");
 
         StartCheckpointPopup();
     }
 
     public void LoadLastCheckpoint() {
         if (current == null) {
-            Debug.LogWarning("[Chap1CheckpointManager] 저장된 체크포인트가 없습니다.");
+            Debug.LogWarning("[Chap2CheckpointManager] 저장된 체크포인트가 없습니다.");
             return;
         }
 
@@ -306,11 +274,9 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
             yield return null;
 
         string targetScene = current.sceneName;
-        Chap1IntroSequence.skipIntroOnce = true;
         SceneManager.LoadScene(targetScene);
 
         yield return null;
-        TryDisableIntroSequenceOnGameManager();
 
         FindSceneOverlays();
         ApplyCheckpointToScene();
@@ -347,13 +313,11 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
     private void ApplyCheckpointToScene() {
         if (current == null) {
-            Debug.LogWarning("[Chap1CheckpointManager] ApplyCheckpointToScene: current 가 null");
+            Debug.LogWarning("[Chap2CheckpointManager] ApplyCheckpointToScene: current가 null");
             return;
         }
 
         var player = FindFirstObjectByType<PlayerController>();
-        var gm = FindFirstObjectByType<GameManagerChap1>();
-
         if (player != null) {
             player.ImportCheckpointData(
                 current.playerPosition,
@@ -363,29 +327,12 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
                 current.playerIsExhausted
             );
         } else {
-            Debug.LogWarning("[Chap1CheckpointManager] Player 를 찾지 못해 위치 복원 실패");
-        }
-
-        if (gm != null) {
-            gm.ImportCheckpointData(
-                current.chapStateInt,
-                current.auxPowerStates,
-                current.pipeSolved
-            );
-        } else {
-            Debug.LogWarning("[Chap1CheckpointManager] GameManagerChap1 를 찾지 못해 진행도 복원 실패");
+            Debug.LogWarning("[Chap2CheckpointManager] PlayerController를 찾지 못해 위치 복원 실패");
         }
 
         var head = FindFirstObjectByType<HeadlampController>();
         if (head != null) {
             head.canUseHeadlamp = current.hasHeadlamp;
-        }
-
-        if (current.hasHeadlamp) {
-            var pickup = FindFirstObjectByType<HeadlampPickup>();
-            if (pickup != null) {
-                pickup.RestorePickedStateFromCheckpoint();
-            }
         }
 
         if (current.consumedCheckpointZoneIds != null) {
@@ -410,17 +357,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
                 if (checkpointCanvasGroup != null)
                     checkpointCanvasGroup.alpha = 0f;
             }
-        }
-    }
-
-    private void TryDisableIntroSequenceOnGameManager() {
-        var gmGo = GameObject.Find("GameManager");
-        if (gmGo == null)
-            return;
-
-        var intro = gmGo.GetComponent<Chap1IntroSequence>();
-        if (intro != null) {
-            intro.enabled = false;
         }
     }
 
@@ -468,6 +404,7 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         checkpointPopupRoutine = null;
     }
 
+    // 나중에 Chap2에서도 CheckpointZone을 쓸 수 있도록 준비해 둔 부분
     public bool IsCheckpointZoneConsumed(string id) {
         if (string.IsNullOrEmpty(id))
             return false;
@@ -482,7 +419,7 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
             return;
 
         if (current == null)
-            current = new Chap1CheckpointData();
+            current = new Chap2CheckpointData();
 
         if (current.consumedCheckpointZoneIds == null)
             current.consumedCheckpointZoneIds = new List<string>();

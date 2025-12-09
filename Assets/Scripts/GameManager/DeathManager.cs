@@ -1,16 +1,16 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class Chap1DeathManager : MonoBehaviour {
-    public static Chap1DeathManager Instance { get; private set; }
+public class DeathManager : MonoBehaviour {
+    public static DeathManager Instance { get; private set; }
 
     [Header("Fade Overlay")]
     [SerializeField] private CanvasGroup fadeCanvasGroup;
 
     [Header("Death UI")]
     [SerializeField] private GameObject deathUIRoot;
-    [SerializeField] private Chap1DeathUIController deathUIController;
+    [SerializeField] private DeathUIController deathUIController;
 
     [Header("Audio")]
     public AudioSource sfxSource;
@@ -54,7 +54,7 @@ public class Chap1DeathManager : MonoBehaviour {
         if (deathUIRoot != null)
             deathUIRoot.SetActive(false);
 
-        var cp = Chap1CheckpointManager.Instance;
+        var cp = CheckpointService.Current;
         if (cp != null && cp.HasCheckpoint) {
             cp.LoadLastCheckpoint();
         } else {
@@ -129,7 +129,7 @@ public class Chap1DeathManager : MonoBehaviour {
         var root = GameObject.Find("Death");
         if (root != null) {
             deathUIRoot = root;
-            deathUIController = root.GetComponent<Chap1DeathUIController>();
+            deathUIController = root.GetComponent<DeathUIController>();
         }
     }
 }

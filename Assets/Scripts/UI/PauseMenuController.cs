@@ -89,7 +89,7 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     void Update() {
-        if (Chap1DeathManager.Instance != null && Chap1DeathManager.Instance.IsDead)
+        if (DeathManager.Instance != null && DeathManager.Instance.IsDead)
             return;
 
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -187,8 +187,8 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     public void OnClickCheckpoint() {
-        var mgr = Chap1CheckpointManager.Instance;
-        if (mgr == null || !mgr.HasCheckpoint) {
+        var cp = CheckpointService.Current;
+        if (cp == null || !cp.HasCheckpoint) {
             Debug.LogWarning("[PauseMenu] 사용할 체크포인트가 없습니다.");
             return;
         }
@@ -483,14 +483,14 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     void ExecuteMoveToCheckpoint() {
-        var mgr = Chap1CheckpointManager.Instance;
-        if (mgr == null || !mgr.HasCheckpoint) {
+        var cp = CheckpointService.Current;
+        if (cp == null || !cp.HasCheckpoint) {
             Debug.LogWarning("[PauseMenu] 사용할 체크포인트가 없습니다.");
             return;
         }
 
         ResumeGame();
-        mgr.LoadLastCheckpoint();
+        cp.LoadLastCheckpoint();
     }
 
     void ExecuteMoveToMainMenu() {

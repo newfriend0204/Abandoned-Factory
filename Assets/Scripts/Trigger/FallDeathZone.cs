@@ -11,8 +11,8 @@ public class FallDeathZone : MonoBehaviour {
         if (player == null)
             return;
 
-        if (Chap1DeathManager.Instance != null) {
-            Chap1DeathManager.Instance.TriggerFallDeath();
+        if (DeathManager.Instance != null) {
+            DeathManager.Instance.TriggerFallDeath();
         }
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using TMPro;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class Chap1DeathUIController : MonoBehaviour {
+public class DeathUIController : MonoBehaviour {
     [Header("Root & Panel")]
     public RectTransform panelRoot;
     public CanvasGroup buttonsGroup;
@@ -199,8 +199,8 @@ public class Chap1DeathUIController : MonoBehaviour {
     }
 
     private IEnumerator ShowButtonsRoutine() {
-        if (Chap1DeathManager.Instance != null) {
-            Chap1DeathManager.Instance.PlayDeathEnterSfx();
+        if (DeathManager.Instance != null) {
+            DeathManager.Instance.PlayDeathEnterSfx();
         }
 
         float duration = 0.25f;

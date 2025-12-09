@@ -2,6 +2,11 @@ using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class CheckpointZone : MonoBehaviour {
+    public enum Chapter {
+        Chap1 = 1,
+        Chap2 = 2
+    }
+
     [Header("Trigger")]
     public string playerTag = "Player";
     public bool useTriggerEnter = true;
@@ -15,43 +20,60 @@ public class CheckpointZone : MonoBehaviour {
     [Header("ID")]
     public string checkpointId;
 
-    private bool hasSaved = false;
+    [Header("Chapter")]
+    public Chapter chapter = Chapter.Chap1;
 
-    private void Awake() {
-        if (string.IsNullOrEmpty(checkpointId))
-            checkpointId = gameObject.name;
-    }
+    bool hasSaved = false;
 
-    private void Start() {
-        var mgr = Chap1CheckpointManager.Instance;
-        if (mgr != null && mgr.IsCheckpointZoneConsumed(checkpointId)) {
-            hasSaved = true;
-        }
-    }
-
-    private void Reset() {
+    void Reset() {
         var col = GetComponent<Collider>();
-        if (col != null)
-            col.isTrigger = true;
+        col.isTrigger = true;
     }
 
-    private void OnTriggerEnter(Collider other) {
+    void OnTriggerEnter(Collider other) {
         if (!useTriggerEnter)
+            return;
+
+        TrySave(other);
+    }
+
+    void OnTriggerStay(Collider other) {
+        if (useTriggerEnter)
+            return;
+
+        TrySave(other);
+    }
+
+    void TrySave(Collider other) {
+        if (hasSaved && saveOnlyOnce)
             return;
 
         if (!other.CompareTag(playerTag))
             return;
 
-        TrySaveCheckpoint();
+        if (string.IsNullOrEmpty(checkpointId)) {
+            checkpointId = gameObject.name;
+        }
+
+        switch (chapter) {
+            case Chapter.Chap1:
+                SaveForChap1();
+                break;
+            case Chapter.Chap2:
+                SaveForChap2();
+                break;
+        }
     }
 
-    public void TrySaveCheckpoint() {
-        if (saveOnlyOnce && hasSaved)
-            return;
-
+    void SaveForChap1() {
         var mgr = Chap1CheckpointManager.Instance;
         if (mgr == null)
             return;
+
+        if (saveOnlyOnce && mgr.IsCheckpointZoneConsumed(checkpointId)) {
+            hasSaved = true;
+            return;
+        }
 
         if (respawnPoint != null) {
             mgr.SaveCheckpointAtSpawnPoint(respawnPoint);
@@ -60,7 +82,26 @@ public class CheckpointZone : MonoBehaviour {
         }
 
         hasSaved = true;
+        mgr.MarkCheckpointZoneConsumed(checkpointId);
+    }
 
+    void SaveForChap2() {
+        var mgr = Chap2CheckpointManager.Instance;
+        if (mgr == null)
+            return;
+
+        if (saveOnlyOnce && mgr.IsCheckpointZoneConsumed(checkpointId)) {
+            hasSaved = true;
+            return;
+        }
+
+        if (respawnPoint != null) {
+            mgr.SaveCheckpointAtSpawnPoint(respawnPoint);
+        } else {
+            mgr.SaveCheckpointAtCurrentPosition();
+        }
+
+        hasSaved = true;
         mgr.MarkCheckpointZoneConsumed(checkpointId);
     }
 }
