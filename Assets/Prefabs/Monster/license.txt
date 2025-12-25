@@ -1,0 +1,11 @@
+Model Information:
+* title:	Blobb Man
+* source:	https://sketchfab.com/3d-models/blobb-man-c65bfc754c93428b9b9aecbddaa8275e
+* author:	Robin.Mikalsen (https://sketchfab.com/Robin.Mikalsen)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Blobb Man" (https://sketchfab.com/3d-models/blobb-man-c65bfc754c93428b9b9aecbddaa8275e) by Robin.Mikalsen (https://sketchfab.com/Robin.Mikalsen) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

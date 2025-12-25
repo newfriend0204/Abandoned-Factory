@@ -15,13 +15,18 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
     public float checkpointFadeDuration = 0.3f;
     public float checkpointHoldDuration = 4f;
 
-    // ==== 런타임/공유 체크포인트 데이터 ====
     private static Chap2CheckpointData sharedData;
+    private static int sharedChap2StateInt = 0;
+    private static int sharedYCurrentStep = 1;
+    private static List<Chap2StepCheckpointEntry> sharedStepCheckpoints;
+
     private Chap2CheckpointData current;
     private bool isLoading = false;
 
     private Coroutine checkpointPopupRoutine;
     private HashSet<string> consumedCheckpointZoneIds = new HashSet<string>();
+
+    private Dictionary<int, Chap2CheckpointData> stepCheckpointCache = new Dictionary<int, Chap2CheckpointData>();
 
     public bool HasCheckpoint => current != null;
 
@@ -39,11 +44,12 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
 
         DontDestroyOnLoad(gameObject);
 
-        // 메인 메뉴에서 LoadSharedDataFromFile()를 미리 호출했으면 들어오는 데이터
+        if (SaveSystem.Current == null && SaveSystem.HasFile)
+            SaveSystem.LoadFromDisk();
+
         if (sharedData != null)
             current = sharedData;
 
-        // 혹시 SaveSystem.Current에 chap2 데이터가 이미 올라와 있는 경우 보정
         if (current == null &&
             SaveSystem.Current != null &&
             SaveSystem.Current.chap2 != null &&
@@ -57,6 +63,7 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
             consumedCheckpointZoneIds = new HashSet<string>(current.consumedCheckpointZoneIds);
         }
 
+        RestoreStepCacheFromSaveDataIfExists();
         FindSceneOverlays();
     }
 
@@ -93,15 +100,15 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
     private IEnumerator CoApplyCheckpointOnSceneLoaded() {
         isLoading = true;
 
-        // Start() 들이 한 프레임 돌아가도록 잠깐 기다렸다가 적용
         yield return null;
 
         ApplyCheckpointToScene();
 
+        Chap2StepInteractionService.SetStepMode(false);
+        Time.timeScale = 1f;
+
         isLoading = false;
     }
-
-    // ==== SaveSystem 연동 (나중에 메인 메뉴에서 쓸 예정) ====
 
     public static bool HasSaveFile => SaveSystem.HasFile;
 
@@ -111,10 +118,14 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
 
     public static void ClearSharedDataInMemory() {
         sharedData = null;
+        sharedChap2StateInt = 0;
+        sharedYCurrentStep = 1;
+        sharedStepCheckpoints = null;
 
         if (Instance != null) {
             Instance.current = null;
             Instance.consumedCheckpointZoneIds.Clear();
+            Instance.stepCheckpointCache.Clear();
         }
     }
 
@@ -122,6 +133,9 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
         if (!SaveSystem.LoadFromDisk()) {
             Debug.Log("[Chap2CheckpointManager] 저장된 세이브 파일이 없습니다.");
             sharedData = null;
+            sharedStepCheckpoints = null;
+            sharedChap2StateInt = 0;
+            sharedYCurrentStep = 1;
             return false;
         }
 
@@ -132,10 +146,17 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
 
             Debug.LogWarning("[Chap2CheckpointManager] Chap2 세이브 데이터가 없습니다.");
             sharedData = null;
+            sharedStepCheckpoints = null;
+            sharedChap2StateInt = 0;
+            sharedYCurrentStep = 1;
             return false;
         }
 
         sharedData = SaveSystem.Current.chap2.last;
+        sharedChap2StateInt = SaveSystem.Current.chap2.chap2StateInt;
+        sharedYCurrentStep = SaveSystem.Current.chap2.yCurrentStep;
+        sharedStepCheckpoints = SaveSystem.Current.chap2.stepCheckpoints;
+
         Debug.Log("[Chap2CheckpointManager] 세이브 파일에서 Chap2 체크포인트 로드 완료.");
         return true;
     }
@@ -161,6 +182,26 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
         return defaultSceneName;
     }
 
+    public static int GetSavedChap2StateIntOrDefault(int defaultStateInt) {
+        if (sharedData != null)
+            return sharedChap2StateInt;
+
+        if (SaveSystem.Current != null && SaveSystem.Current.chap2 != null)
+            return SaveSystem.Current.chap2.chap2StateInt;
+
+        return defaultStateInt;
+    }
+
+    public static int GetSavedYCurrentStepOrDefault(int defaultStep) {
+        if (sharedData != null)
+            return sharedYCurrentStep;
+
+        if (SaveSystem.Current != null && SaveSystem.Current.chap2 != null)
+            return SaveSystem.Current.chap2.yCurrentStep;
+
+        return defaultStep;
+    }
+
     private static void SaveSharedDataToFile() {
         if (Instance == null || Instance.current == null)
             return;
@@ -176,30 +217,89 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
         if (data.player == null)
             data.player = new PlayerGlobalData();
 
-        data.currentChapter = 2; // Chap2 플레이 중
+        data.currentChapter = 2;
 
         data.chap2.hasCheckpoint = true;
         data.chap2.last = Instance.current;
 
-        // 전역 플레이어 상태도 함께 저장
         data.player.hasHeadlamp = Instance.current.hasHeadlamp;
         data.player.savedSprintStamina = Instance.current.playerSprintStamina;
         data.player.savedIsExhausted = Instance.current.playerIsExhausted;
 
+        var gm = FindFirstObjectByType<GameManagerChap2>();
+        if (gm != null)
+            data.chap2.chap2StateInt = (int)gm.State;
+
+        var yseq = FindFirstObjectByType<Chap2YStepSequenceManager>();
+        if (yseq != null)
+            data.chap2.yCurrentStep = yseq.CurrentStep;
+
+        if (data.chap2.stepCheckpoints == null)
+            data.chap2.stepCheckpoints = new List<Chap2StepCheckpointEntry>();
+        else
+            data.chap2.stepCheckpoints.Clear();
+
+        foreach (var kv in Instance.stepCheckpointCache) {
+            var entry = new Chap2StepCheckpointEntry();
+            entry.step = kv.Key;
+            entry.data = Instance.CloneCheckpointData(kv.Value);
+            data.chap2.stepCheckpoints.Add(entry);
+        }
+
+        sharedData = Instance.current;
+        sharedChap2StateInt = data.chap2.chap2StateInt;
+        sharedYCurrentStep = data.chap2.yCurrentStep;
+        sharedStepCheckpoints = data.chap2.stepCheckpoints;
+
         SaveSystem.SaveToDisk();
     }
 
-    // ==== 체크포인트 저장/로드 ====
+    private void RestoreStepCacheFromSaveDataIfExists() {
+        stepCheckpointCache.Clear();
+
+        List<Chap2StepCheckpointEntry> src = null;
+
+        if (sharedStepCheckpoints != null && sharedStepCheckpoints.Count > 0)
+            src = sharedStepCheckpoints;
+        else if (SaveSystem.Current != null &&
+            SaveSystem.Current.chap2 != null &&
+            SaveSystem.Current.chap2.stepCheckpoints != null &&
+            SaveSystem.Current.chap2.stepCheckpoints.Count > 0)
+            src = SaveSystem.Current.chap2.stepCheckpoints;
+
+        if (src == null)
+            return;
+
+        for (int i = 0; i < src.Count; i++) {
+            var e = src[i];
+            if (e == null || e.data == null)
+                continue;
+
+            int step = e.step;
+            if (step < 1)
+                step = 1;
+
+            stepCheckpointCache[step] = CloneCheckpointData(e.data);
+        }
+    }
 
     public void SaveCheckpointAtCurrentPosition() {
-        SaveInternal(false, null);
+        SaveInternal(false, null, true, true);
     }
 
     public void SaveCheckpointAtSpawnPoint(Transform spawnPoint) {
-        SaveInternal(true, spawnPoint);
+        SaveInternal(true, spawnPoint, true, true);
     }
 
-    private void SaveInternal(bool useSpawnPoint, Transform spawnPoint) {
+    public void SaveCheckpointAtCurrentPositionSilent(bool writeToFile) {
+        SaveInternal(false, null, false, writeToFile);
+    }
+
+    public void SaveCheckpointAtSpawnPointSilent(Transform spawnPoint, bool writeToFile) {
+        SaveInternal(true, spawnPoint, false, writeToFile);
+    }
+
+    private void SaveInternal(bool useSpawnPoint, Transform spawnPoint, bool showPopup, bool writeToFile) {
         var player = FindFirstObjectByType<PlayerController>();
         var head = FindFirstObjectByType<HeadlampController>();
 
@@ -244,12 +344,13 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
 
         sharedData = current;
 
-        // SaveSystem에 반영
-        SaveSharedDataToFile();
+        if (writeToFile)
+            SaveSharedDataToFile();
 
-        Debug.Log($"[Chap2CheckpointManager] 체크포인트 저장 완료 (scene='{current.sceneName}')");
+        Debug.Log($"[Chap2CheckpointManager] 체크포인트 저장 완료 (scene='{current.sceneName}', writeToFile={writeToFile})");
 
-        StartCheckpointPopup();
+        if (showPopup)
+            StartCheckpointPopup();
     }
 
     public void LoadLastCheckpoint() {
@@ -332,7 +433,7 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
 
         var head = FindFirstObjectByType<HeadlampController>();
         if (head != null) {
-            head.canUseHeadlamp = current.hasHeadlamp;
+            head.canUseHeadlamp = true;// head.canUseHeadlamp = current.hasHeadlamp; 디버그, 나중에 주석한걸로 교체하기!
         }
 
         if (current.consumedCheckpointZoneIds != null) {
@@ -404,7 +505,6 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
         checkpointPopupRoutine = null;
     }
 
-    // 나중에 Chap2에서도 CheckpointZone을 쓸 수 있도록 준비해 둔 부분
     public bool IsCheckpointZoneConsumed(string id) {
         if (string.IsNullOrEmpty(id))
             return false;
@@ -428,5 +528,74 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
             current.consumedCheckpointZoneIds.Add(id);
 
         sharedData = current;
+    }
+
+    public bool HasStepCheckpoint(int step) {
+        return stepCheckpointCache.ContainsKey(step);
+    }
+
+    public void CacheCurrentAsStepCheckpoint(int step) {
+        if (current == null)
+            return;
+
+        if (step < 1)
+            step = 1;
+
+        stepCheckpointCache[step] = CloneCheckpointData(current);
+    }
+
+    public void SaveStepCheckpointFromCurrentPosition(int step, bool showPopup) {
+        SaveInternal(false, null, showPopup, true);
+        CacheCurrentAsStepCheckpoint(step);
+        SaveSharedDataToFile();
+    }
+
+    public void SaveStepCheckpointFromSpawnPoint(int step, Transform spawnPoint, bool showPopup, bool writeToFile) {
+        SaveInternal(true, spawnPoint, showPopup, writeToFile);
+        CacheCurrentAsStepCheckpoint(step);
+
+        if (writeToFile)
+            SaveSharedDataToFile();
+    }
+
+    public void LoadStepCheckpoint(int step) {
+        if (step < 1)
+            step = 1;
+
+        if (!stepCheckpointCache.TryGetValue(step, out Chap2CheckpointData data) || data == null) {
+            Debug.LogWarning($"[Chap2CheckpointManager] LoadStepCheckpoint 실패: step {step} 캐시가 없음");
+            return;
+        }
+
+        current = CloneCheckpointData(data);
+        sharedData = current;
+
+        SaveSharedDataToFile();
+
+        LoadLastCheckpoint();
+    }
+
+    private Chap2CheckpointData CloneCheckpointData(Chap2CheckpointData src) {
+        if (src == null)
+            return null;
+
+        var dst = new Chap2CheckpointData();
+        dst.sceneName = src.sceneName;
+
+        dst.playerPosition = src.playerPosition;
+        dst.playerRotation = src.playerRotation;
+        dst.playerPitch = src.playerPitch;
+
+        dst.playerSprintStamina = src.playerSprintStamina;
+        dst.playerIsExhausted = src.playerIsExhausted;
+
+        dst.hasHeadlamp = src.hasHeadlamp;
+
+        if (src.consumedCheckpointZoneIds != null)
+            dst.consumedCheckpointZoneIds = new List<string>(src.consumedCheckpointZoneIds);
+        else
+            dst.consumedCheckpointZoneIds = null;
+
+        return dst;
     }
 }

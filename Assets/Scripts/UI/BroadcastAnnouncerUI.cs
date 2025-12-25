@@ -653,4 +653,4 @@ public class BroadcastAnnouncerUI : MonoBehaviour {
     private float EaseOutQuad(float t) => 1f - (1f - t) * (1f - t);
     private float EaseInQuad(float t) => t * t;
 }
-//AI 생성
+//AI 생성, 개편 예정

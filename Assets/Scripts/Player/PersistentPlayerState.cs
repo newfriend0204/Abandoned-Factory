@@ -5,11 +5,8 @@ public class PersistentPlayerState : MonoBehaviour {
 
     [Header("Player State")]
     public bool hasHeadlamp;
-    public float savedSprintStamina = -1f;   // 음수면 "없음" 의미
+    public float savedSprintStamina = -1f;
     public bool savedIsExhausted = false;
-
-    [Header("Debug")]
-    public bool debugLog = false;
 
     private void Awake() {
         if (Instance != null && Instance != this) {
@@ -30,10 +27,6 @@ public class PersistentPlayerState : MonoBehaviour {
         if (headlamp != null) {
             hasHeadlamp = headlamp.canUseHeadlamp;
         }
-
-        if (debugLog) {
-            Debug.Log($"[PersistentPlayerState] Captured: stamina={savedSprintStamina}, exhausted={savedIsExhausted}, hasHeadlamp={hasHeadlamp}");
-        }
     }
 
     public void ApplyToScene(PlayerController player, HeadlampController headlamp) {
@@ -46,10 +39,6 @@ public class PersistentPlayerState : MonoBehaviour {
 
         if (headlamp != null) {
             headlamp.canUseHeadlamp = hasHeadlamp;
-        }
-
-        if (debugLog) {
-            Debug.Log($"[PersistentPlayerState] Applied: stamina={player?.sprintStamina}, exhausted={player?.isExhausted}, hasHeadlamp={headlamp?.canUseHeadlamp}");
         }
     }
 

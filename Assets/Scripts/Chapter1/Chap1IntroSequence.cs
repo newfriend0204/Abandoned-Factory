@@ -51,12 +51,11 @@ public class Chap1IntroSequence : MonoBehaviour {
     public TutorialHintUI tutorialUI;
     public float moveTutorialDuration = 5f;
 
-    // === 새로 추가된 부분: 인트로 독백 설정 ===
     [Header("Intro Monologue")]
-    public MonologueManager introMonologueManager;   // 비워두면 자동으로 씬에서 찾아봄
+    public MonologueManager introMonologueManager;
     [TextArea]
-    public string introMessage;                      // 예: "여기는... 어디지?"
-    public float introMessageDelay = 5f;             // 플레이어 조작 가능해진 뒤, 몇 초 후에 띄울지
+    public string introMessage;
+    public float introMessageDelay = 5f;
     public bool introUseTypewriter = true;
 
     public bool overrideIntroVisibleDuration = false;
@@ -77,7 +76,6 @@ public class Chap1IntroSequence : MonoBehaviour {
         if (skipIntroOnce)
             skipIntroOnce = false;
 
-        // 이어하기로 들어오거나, 인트로를 사용하지 않는 경우
         if (!playIntroOnSceneStart || shouldSkip) {
             if (playerController != null)
                 playerController.enabled = true;
@@ -94,11 +92,9 @@ public class Chap1IntroSequence : MonoBehaviour {
                 fadeOverlay.alpha = 0f;
             }
 
-            // 이 경우에는 인트로 연출도, 인트로 독백도 모두 스킵
             return;
         }
 
-        // 처음부터 시작할 때만 인트로 연출 + 인트로 독백 실행
         if (playerController != null)
             playerController.enabled = false;
 
@@ -162,13 +158,10 @@ public class Chap1IntroSequence : MonoBehaviour {
         if (tutorialUI != null)
             tutorialUI.ShowTutorial(0, moveTutorialDuration);
 
-        // 인트로 연출이 끝난 뒤, 플레이어가 움직일 수 있는 상태에서
-        // 5초(기본값) 기다렸다가 독백 출력
         StartCoroutine(PlayIntroMonologue());
     }
 
     IEnumerator PlayIntroMonologue() {
-        // 메시지가 비어 있으면 아무 것도 하지 않음
         if (string.IsNullOrWhiteSpace(introMessage))
             yield break;
 
@@ -182,12 +175,10 @@ public class Chap1IntroSequence : MonoBehaviour {
         if (introMessageDelay > 0f)
             yield return new WaitForSeconds(introMessageDelay);
 
-        // 표시 시간 결정
         float visibleDuration = mgr.defaultVisibleDuration;
         if (overrideIntroVisibleDuration)
             visibleDuration = Mathf.Max(0f, introVisibleDuration);
 
-        // 타자기 속도 임시 변경
         bool changedSpeed = false;
         float originalSpeed = mgr.typewriterCharsPerSecond;
 
@@ -198,7 +189,6 @@ public class Chap1IntroSequence : MonoBehaviour {
 
         mgr.ShowMessage(introMessage, visibleDuration, introUseTypewriter);
 
-        // 원래 속도로 복원
         if (changedSpeed)
             mgr.typewriterCharsPerSecond = originalSpeed;
     }
@@ -298,11 +288,8 @@ public class Chap1IntroSequence : MonoBehaviour {
     }
 
     IEnumerator AnimateVignette() {
-        // Step 1
         yield return AnimateVignetteIntensity(vignette.intensity.value, vignetteStep1Target, vignetteStep1Duration);
-        // Step 2
         yield return AnimateVignetteIntensity(vignetteStep1Target, vignetteStep2Target, vignetteStep2Duration);
-        // Step 3
         yield return AnimateVignetteIntensity(vignetteStep2Target, vignetteStep3Target, vignetteStep3Duration);
     }
 

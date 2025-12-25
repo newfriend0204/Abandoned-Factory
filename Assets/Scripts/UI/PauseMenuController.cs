@@ -41,6 +41,7 @@ public class PauseMenuController : MonoBehaviour {
     bool isPaused = false;
     bool hasUnsavedChanges = false;
     bool isUsingDefaultSummary = true;
+    bool wasInStepModePrevFrame = false;
 
     Action pendingAction = null;
 
@@ -92,10 +93,20 @@ public class PauseMenuController : MonoBehaviour {
         if (DeathManager.Instance != null && DeathManager.Instance.IsDead)
             return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Chap2StepInteractionService.IsInStepMode)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            if (wasInStepModePrevFrame)
+                return;
+
             OnPressEscape();
+        }
     }
 
+    void LateUpdate() {
+        wasInStepModePrevFrame = Chap2StepInteractionService.IsInStepMode;
+    }
 
     public void MarkSettingChanged() {
         hasUnsavedChanges = true;
@@ -483,14 +494,22 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     void ExecuteMoveToCheckpoint() {
-        var cp = CheckpointService.Current;
-        if (cp == null || !cp.HasCheckpoint) {
+        var cur = CheckpointService.Current;
+
+        if (cur == null || !cur.HasCheckpoint) {
             Debug.LogWarning("[PauseMenu] 사용할 체크포인트가 없습니다.");
             return;
         }
 
         ResumeGame();
-        cp.LoadLastCheckpoint();
+
+        var y = Chap2YStepSequenceManager.Instance;
+        if (y != null) {
+            y.LoadLastCheckpoint();
+            return;
+        }
+
+        cur.LoadLastCheckpoint();
     }
 
     void ExecuteMoveToMainMenu() {

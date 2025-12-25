@@ -24,21 +24,31 @@ public class PlayerController : MonoBehaviour {
     public float maxPitch = 80f;
     public bool lockCursor = true;
 
-    [Header("Gameplay Settings (from SettingsManager)")]
+    [Header("Restricted Mode")]
+    public bool isMovementLocked = false;
+    public bool useBodyRotation = true;
+    public bool lockLookX = false;
+    public bool lockLookY = false;
+    public Vector2 lookSensitivityMultiplier = Vector2.one;
+    public bool isHeadlampInputLocked = false;
+
+    [Header("Yaw Clamping")]
+    public bool useYawClamp = false;
+    public float minYawLimit = -60f;
+    public float maxYawLimit = 60f;
+
+    [Header("Gameplay Settings")]
     public bool useSettingsManager = true;
 
-    // 0 = hold, 1 = toggle
     private int runMethod = 0;
-    // 0 = 기본 걷기, 1 = 기본 달리기
     private int walkRunDefault = 0;
     private bool cameraShakeEnabled = true;
 
-    // 마우스 감도 (설정 메뉴에서 오는 값들)
-    private float mouseSensitivity = 1.0f;   // 0.01 ~ 10
-    private float mouseSensitivityX = 1.0f;  // 0.01 ~ 2
-    private float mouseSensitivityY = 1.0f;  // 0.01 ~ 2
-    private float mouseAcceleration = 0.0f;  // 0 ~ 1
-    private bool invertMouseY = false;       // false = 정상, true = 반전
+    private float mouseSensitivity = 1.0f;
+    private float mouseSensitivityX = 1.0f;
+    private float mouseSensitivityY = 1.0f;
+    private float mouseAcceleration = 0.0f;
+    private bool invertMouseY = false;
 
     private float baseSensX;
     private float baseSensY;
@@ -69,7 +79,7 @@ public class PlayerController : MonoBehaviour {
     [Range(0.7f, 0.99f)]
     public float headOnStopDot = 0.90f;
 
-    [Header("Friction Swap (optional)")]
+    [Header("Friction Swap")]
     public PhysicsMaterial groundMat;
     public PhysicsMaterial airMat;
 
@@ -109,7 +119,7 @@ public class PlayerController : MonoBehaviour {
     public float rollClamp = 1.0f;
 
     [Header("Animation")]
-    [SerializeField] private Animator handAnimator;
+    public Animator handAnimator;
     private static readonly int AnimSpeed = Animator.StringToHash("Speed");
     private static readonly int AnimSprinting = Animator.StringToHash("Sprinting");
 
@@ -129,7 +139,11 @@ public class PlayerController : MonoBehaviour {
 
     private Rigidbody rb;
     private CapsuleCollider capsule;
+    private HeadlampController headlampController;
+
     private float pitch;
+    private float currentYaw;
+
     private bool grounded;
     private bool onTooSteep;
     private bool nearWall;
@@ -170,9 +184,15 @@ public class PlayerController : MonoBehaviour {
     private bool wasSprintingForSteps;
     private bool jumpSoundPlayed;
 
+    private RigidbodyConstraints defaultConstraints;
+
     private void Awake() {
         rb = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
+
+        if (rb != null) {
+            defaultConstraints = rb.constraints;
+        }
 
         baseSensX = sensX;
         baseSensY = sensY;
@@ -180,6 +200,11 @@ public class PlayerController : MonoBehaviour {
         if (playerCamera != null) {
             baseFOV = playerCamera.fieldOfView;
             camBaseLocalPos = playerCamera.transform.localPosition;
+
+            Vector3 euler = playerCamera.transform.localEulerAngles;
+            pitch = euler.x;
+            if (pitch > 180f) pitch -= 360f;
+            currentYaw = 0f;
         }
 
         if (inputSettingsManager == null) {
@@ -189,6 +214,8 @@ public class PlayerController : MonoBehaviour {
                 inputSettingsManager = FindFirstObjectByType<InputSettingsManager>();
             }
         }
+
+        headlampController = FindFirstObjectByType<HeadlampController>();
 
         if (useSettingsManager) {
             LoadSettingsFromManager();
@@ -216,26 +243,18 @@ public class PlayerController : MonoBehaviour {
     }
 
     public void LoadSettingsFromManager() {
-        if (!useSettingsManager)
-            return;
-
-        if (SettingsManager.Instance == null)
-            return;
+        if (!useSettingsManager) return;
+        if (SettingsManager.Instance == null) return;
 
         runMethod = SettingsManager.Instance.GetInt("RunMethod", 0);
         walkRunDefault = SettingsManager.Instance.GetInt("WalkRunDefault", 0);
-
         int camShake = SettingsManager.Instance.GetInt("CameraShake", 0);
         cameraShakeEnabled = (camShake == 0);
-
         int invY = SettingsManager.Instance.GetInt("InvertMouseY", 0);
         invertMouseY = (invY == 1);
-
         float fov = SettingsManager.Instance.GetFloat("FOV", baseFOV);
         baseFOV = fov;
-        if (playerCamera != null) {
-            playerCamera.fieldOfView = fov;
-        }
+        if (playerCamera != null) playerCamera.fieldOfView = fov;
 
         mouseSensitivity = SettingsManager.Instance.GetFloat("MouseSensitivity", 1.0f);
         mouseSensitivityX = SettingsManager.Instance.GetFloat("MouseSensitivityX", 1.0f);
@@ -262,40 +281,47 @@ public class PlayerController : MonoBehaviour {
             }
         }
 
-        // -------------------------
-        //  마우스 입력
-        // -------------------------
-        float mx = Input.GetAxisRaw("Mouse X");
-        float my = Input.GetAxisRaw("Mouse Y");
+        float mx = lockLookX ? 0f : Input.GetAxisRaw("Mouse X");
+        float my = lockLookY ? 0f : Input.GetAxisRaw("Mouse Y");
 
         float mouseMag = Mathf.Sqrt(mx * mx + my * my);
         float accelFactor = 1f + mouseAcceleration * mouseMag;
-        if (accelFactor < 0f) {
-            accelFactor = 0f;
-        }
+        if (accelFactor < 0f) accelFactor = 0f;
 
-        float effectiveSensX = baseSensX * mouseSensitivity * mouseSensitivityX * accelFactor;
-        float effectiveSensY = baseSensY * mouseSensitivity * mouseSensitivityY * accelFactor;
+        float effectiveSensX = baseSensX * mouseSensitivity * mouseSensitivityX * accelFactor * lookSensitivityMultiplier.x;
+        float effectiveSensY = baseSensY * mouseSensitivity * mouseSensitivityY * accelFactor * lookSensitivityMultiplier.y;
 
         float yInput = my;
-        if (invertMouseY) {
-            yInput = -yInput;
+        if (invertMouseY) yInput = -yInput;
+
+        if (!lockLookY) {
+            pitch = Mathf.Clamp(pitch - yInput * effectiveSensY, minPitch, maxPitch);
         }
 
-        pitch = Mathf.Clamp(pitch - yInput * effectiveSensY, minPitch, maxPitch);
-        transform.Rotate(Vector3.up, mx * effectiveSensX, Space.Self);
+        if (!lockLookX) {
+            float deltaYaw = mx * effectiveSensX;
+            if (useBodyRotation) {
+                transform.Rotate(Vector3.up, deltaYaw, Space.Self);
+                currentYaw = 0f;
+            } else {
+                currentYaw += deltaYaw;
+                if (useYawClamp) {
+                    currentYaw = Mathf.Clamp(currentYaw, minYawLimit, maxYawLimit);
+                }
+            }
+        }
 
-        // -------------------------
-        //  이동 키 입력 (축 계산)
-        // -------------------------
-        float moveX = GetAxisFromBindings("MoveRight", "MoveLeft");
-        float moveZ = GetAxisFromBindings("MoveForward", "MoveBackward");
-        bool hasMoveInput = (Mathf.Abs(moveX) + Mathf.Abs(moveZ)) > 0.001f;
+        float moveX = 0f;
+        float moveZ = 0f;
+        bool hasMoveInput = false;
 
-        // -------------------------
-        //  점프 입력 (버퍼용)
-        // -------------------------
-        if (IsActionDown("Jump")) {
+        if (!isMovementLocked) {
+            moveX = GetAxisFromBindings("MoveRight", "MoveLeft");
+            moveZ = GetAxisFromBindings("MoveForward", "MoveBackward");
+            hasMoveInput = (Mathf.Abs(moveX) + Mathf.Abs(moveZ)) > 0.001f;
+        }
+
+        if (!isMovementLocked && IsActionDown("Jump")) {
             lastJumpPressedTime = Time.time;
             jumpSoundPlayed = false;
         }
@@ -316,49 +342,23 @@ public class PlayerController : MonoBehaviour {
                 Vector3 center = groundCheck.position;
                 float radius = groundCheckRadius;
                 float halfHeight = 0.03f;
-
                 Vector3 p0 = center + Vector3.up * halfHeight;
                 Vector3 p1 = center + Vector3.down * halfHeight;
-
-                int cnt = Physics.OverlapCapsuleNonAlloc(
-                    p0,
-                    p1,
-                    radius,
-                    _overlap,
-                    groundMask,
-                    QueryTriggerInteraction.Ignore
-                );
-
+                int cnt = Physics.OverlapCapsuleNonAlloc(p0, p1, radius, _overlap, groundMask, QueryTriggerInteraction.Ignore);
                 for (int i = 0; i < cnt; i++) {
                     var c = _overlap[i];
-                    if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform))
-                        continue;
+                    if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform)) continue;
                     grounded = true;
                     break;
                 }
             } else if (capsule != null) {
                 float r = capsule.radius;
-                float bottomSphereY =
-                    transform.position.y + capsule.center.y - (capsule.height * 0.5f - r);
-
-                Vector3 bottomCenter = new Vector3(
-                    transform.position.x,
-                    bottomSphereY,
-                    transform.position.z
-                );
-
-                int cnt = Physics.OverlapSphereNonAlloc(
-                    bottomCenter,
-                    r * 0.95f,
-                    _overlap,
-                    groundMask,
-                    QueryTriggerInteraction.Ignore
-                );
-
+                float bottomSphereY = transform.position.y + capsule.center.y - (capsule.height * 0.5f - r);
+                Vector3 bottomCenter = new Vector3(transform.position.x, bottomSphereY, transform.position.z);
+                int cnt = Physics.OverlapSphereNonAlloc(bottomCenter, r * 0.95f, _overlap, groundMask, QueryTriggerInteraction.Ignore);
                 for (int i = 0; i < cnt; i++) {
                     var c = _overlap[i];
-                    if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform))
-                        continue;
+                    if (!c || c.attachedRigidbody == rb || c.transform.IsChildOf(transform)) continue;
                     grounded = true;
                     break;
                 }
@@ -368,12 +368,9 @@ public class PlayerController : MonoBehaviour {
         if (grounded) {
             float r = capsule ? capsule.radius : 0.5f;
             float skin = 0.02f;
-            float bottomY = transform.position.y + (capsule ? capsule.center.y : 0f)
-                            - (capsule ? (capsule.height * 0.5f - capsule.radius) : 0.5f)
-                            + r + skin;
+            float bottomY = transform.position.y + (capsule ? capsule.center.y : 0f) - (capsule ? (capsule.height * 0.5f - capsule.radius) : 0.5f) + r + skin;
             Vector3 origin = new Vector3(transform.position.x, bottomY + 0.05f, transform.position.z);
-            if (Physics.SphereCast(origin, r * 0.95f, Vector3.down,
-                out RaycastHit hit, groundProbeDistance, groundMask, QueryTriggerInteraction.Ignore)) {
+            if (Physics.SphereCast(origin, r * 0.95f, Vector3.down, out RaycastHit hit, groundProbeDistance, groundMask, QueryTriggerInteraction.Ignore)) {
                 groundNormal = hit.normal;
                 slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
                 if (slopeAngle > maxSlopeAngle) {
@@ -385,29 +382,29 @@ public class PlayerController : MonoBehaviour {
 
         nearWall = false;
         wallNormal = Vector3.zero;
-        Vector3 wishDirForWall = (transform.right * moveX + transform.forward * moveZ).normalized;
-        if (wishDirForWall.sqrMagnitude > 0.01f) {
-            float halfH = capsule ? capsule.height * 0.5f : 1f;
-            float r = capsule ? capsule.radius : 0.5f;
-            Vector3 wallOrigin = transform.position + Vector3.up * halfH - wishDirForWall * (r * wallCastBackOffset);
-            float castDist = wallProbeDistance + r * 0.6f;
-            if (Physics.SphereCast(wallOrigin, r * 0.95f, wishDirForWall,
-                out RaycastHit wh, castDist, groundMask, QueryTriggerInteraction.Ignore)) {
-                if (Vector3.Angle(wh.normal, Vector3.up) > maxSlopeAngle) {
-                    nearWall = true;
-                    wallNormal = wh.normal;
+        if (!isMovementLocked) {
+            Vector3 wishDirForWall = (transform.right * moveX + transform.forward * moveZ).normalized;
+            if (wishDirForWall.sqrMagnitude > 0.01f) {
+                float halfH = capsule ? capsule.height * 0.5f : 1f;
+                float r = capsule ? capsule.radius : 0.5f;
+                Vector3 wallOrigin = transform.position + Vector3.up * halfH - wishDirForWall * (r * wallCastBackOffset);
+                float castDist = wallProbeDistance + r * 0.6f;
+                if (Physics.SphereCast(wallOrigin, r * 0.95f, wishDirForWall, out RaycastHit wh, castDist, groundMask, QueryTriggerInteraction.Ignore)) {
+                    if (Vector3.Angle(wh.normal, Vector3.up) > maxSlopeAngle) {
+                        nearWall = true;
+                        wallNormal = wh.normal;
+                    }
                 }
             }
         }
 
-        if (grounded) {
-            lastGroundedTime = Time.time;
-        }
+        if (grounded) lastGroundedTime = Time.time;
 
         bool buffered = (Time.time - lastJumpPressedTime) <= jumpBuffer;
         bool coyote = grounded || (Time.time - lastGroundedTime) <= coyoteTime;
         bool pastStartup = (Time.time - gameStartTime) >= startupIgnoreJumpTime;
-        if (!jumpRequested && pastStartup && buffered && coyote) {
+
+        if (!isMovementLocked && !jumpRequested && pastStartup && buffered && coyote) {
             jumpRequested = true;
         }
 
@@ -415,31 +412,16 @@ public class PlayerController : MonoBehaviour {
         float maxSpeed = moveSpeed * sprintMultiplier;
         float speed01 = grounded ? Mathf.Clamp01(hzSpeed / maxSpeed) : 0f;
 
-        // -------------------------
-        //  RunMethod / WalkRunDefault 처리
-        // -------------------------
-        bool runKeyHeld = IsActionPressed("Run");
-        bool runKeyDown = IsActionDown("Run");
-
-        if (runMethod == 1) {
-            if (runKeyDown) {
-                runToggleState = !runToggleState;
-            }
-        }
-
-        bool sprintState;
-        if (runMethod == 0) {
-            if (walkRunDefault == 0) {
-                sprintState = runKeyHeld;
-            } else {
-                sprintState = !runKeyHeld;
-            }
-        } else {
-            sprintState = runToggleState;
+        bool sprintState = false;
+        if (!isMovementLocked) {
+            bool runKeyHeld = IsActionPressed("Run");
+            bool runKeyDown = IsActionDown("Run");
+            if (runMethod == 1 && runKeyDown) runToggleState = !runToggleState;
+            if (runMethod == 0) sprintState = (walkRunDefault == 0) ? runKeyHeld : !runKeyHeld;
+            else sprintState = runToggleState;
         }
 
         bool wantsSprint = sprintState && hasMoveInput;
-
         UpdateSprintStamina(wantsSprint);
         UpdateFootstepAudio(hzSpeed);
 
@@ -450,33 +432,32 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void FixedUpdate() {
-        if (Time.timeScale == 0f)
+        if (Time.timeScale == 0f || rb.isKinematic)
             return;
 
-        float x = GetAxisFromBindings("MoveRight", "MoveLeft");
-        float z = GetAxisFromBindings("MoveForward", "MoveBackward");
+        float x = 0f;
+        float z = 0f;
+        if (!isMovementLocked) {
+            x = GetAxisFromBindings("MoveRight", "MoveLeft");
+            z = GetAxisFromBindings("MoveForward", "MoveBackward");
+        }
+
         bool hasMoveInput = (Mathf.Abs(x) + Mathf.Abs(z)) > 0.001f;
-
         bool sprint = sprinting && hasMoveInput;
-
         float currentSpeed = moveSpeed * (sprint ? sprintMultiplier : 1f);
 
         Vector3 wish = (transform.right * x + transform.forward * z);
         if (grounded && !onTooSteep) {
             wish = Vector3.ProjectOnPlane(wish, groundNormal);
-            if (wish.sqrMagnitude > 0.0001f)
-                wish = wish.normalized;
+            if (wish.sqrMagnitude > 0.0001f) wish = wish.normalized;
         }
         if (nearWall && wish.sqrMagnitude > 0.000001f) {
             Vector3 wishN = wish.normalized;
             float into = Vector3.Dot(wishN, -wallNormal);
-            if (into >= headOnStopDot)
-                wish = Vector3.zero;
-            else
-                wish = Vector3.ProjectOnPlane(wish, wallNormal);
+            if (into >= headOnStopDot) wish = Vector3.zero;
+            else wish = Vector3.ProjectOnPlane(wish, wallNormal);
         }
-        if (wish.sqrMagnitude > 1f)
-            wish.Normalize();
+        if (wish.sqrMagnitude > 1f) wish.Normalize();
         wish *= currentSpeed;
 
         float accel;
@@ -498,9 +479,7 @@ public class PlayerController : MonoBehaviour {
 
         if (jumpRequested) {
             Vector3 jv = rb.linearVelocity;
-            if (jv.y < 0f) {
-                jv.y = 0f;
-            }
+            if (jv.y < 0f) jv.y = 0f;
             jv.y = jumpVelocityY;
             rb.linearVelocity = jv;
             grounded = false;
@@ -509,15 +488,12 @@ public class PlayerController : MonoBehaviour {
             postJumpIgnoreTimer = postJumpIgnoreDuration;
             sinceJump = 0f;
             jumpRequested = false;
-
             PlayJumpSound();
         }
 
         float extraGravity = customGravityY - Physics.gravity.y;
         Vector3 gravityAccel = new Vector3(0f, extraGravity, 0f);
-        if (rb.linearVelocity.y < 0f) {
-            gravityAccel.y *= 2.2f;
-        }
+        if (rb.linearVelocity.y < 0f) gravityAccel.y *= 2.2f;
         rb.AddForce(gravityAccel, ForceMode.Acceleration);
 
         if (grounded && !onTooSteep) {
@@ -537,7 +513,6 @@ public class PlayerController : MonoBehaviour {
             Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
             landingRollSign = Mathf.Sign(Mathf.Abs(velLocal.x) < 0.01f ? Random.Range(-1f, 1f) : velLocal.x);
             landingRollT = 1f;
-
             PlayLandSound();
         }
         wasGrounded = grounded;
@@ -545,28 +520,20 @@ public class PlayerController : MonoBehaviour {
 
         if (capsule != null && (groundMat != null || airMat != null)) {
             PhysicsMaterial targetMat = (grounded && !onTooSteep) ? groundMat : airMat;
-            if (capsule.material != targetMat) {
-                capsule.material = targetMat;
-            }
+            if (capsule.material != targetMat) capsule.material = targetMat;
         }
     }
 
     private void LateUpdate() {
-        if (Time.timeScale == 0f)
-            return;
+        if (Time.timeScale == 0f) return;
         UpdateCameraFX();
     }
 
     private void UpdateCameraFX() {
         bool sprint = sprinting;
-
         float targetFov = baseFOV;
-        if (cameraShakeEnabled) {
-            targetFov = baseFOV + (sprint ? fovKick : 0f);
-        }
-        if (playerCamera != null) {
-            playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFov, Time.deltaTime * fovKickSpeed);
-        }
+        if (cameraShakeEnabled) targetFov = baseFOV + (sprint ? fovKick : 0f);
+        if (playerCamera != null) playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFov, Time.deltaTime * fovKickSpeed);
 
         float hzSpeed = new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude;
         bool moving = hzSpeed > 0.1f;
@@ -578,14 +545,10 @@ public class PlayerController : MonoBehaviour {
             amp = sprint ? headBobRunAmp : headBobWalkAmp;
         }
 
-        if (cameraShakeEnabled && freq > 0f) {
-            bobTimer += Time.deltaTime * freq;
-        } else {
-            bobTimer = 0f;
-        }
+        if (cameraShakeEnabled && freq > 0f) bobTimer += Time.deltaTime * freq;
+        else bobTimer = 0f;
 
         float bobOffset = cameraShakeEnabled ? amp * Mathf.Sin(bobTimer * Mathf.PI * 2f) : 0f;
-
         float kickOffsetY = 0f;
         if (cameraShakeEnabled && landingKickT > 0f) {
             float t = 1f - landingKickT;
@@ -597,14 +560,14 @@ public class PlayerController : MonoBehaviour {
         Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
         float targetRoll = 0f;
         float targetPitch = 0f;
-        if (cameraShakeEnabled) {
+        if (cameraShakeEnabled && !isMovementLocked) {
             targetRoll = Mathf.Clamp(-velLocal.x / (moveSpeed * sprintMultiplier) * tiltRollMax, -tiltRollMax, tiltRollMax);
             if (!grounded) {
                 targetPitch = Mathf.Clamp(-velLocal.z / (moveSpeed * sprintMultiplier) * tiltPitchAirMax, -tiltPitchAirMax, tiltPitchAirMax);
             }
         }
 
-        float horIn = Mathf.Abs(GetAxisFromBindings("MoveRight", "MoveLeft"));
+        float horIn = Mathf.Abs(isMovementLocked ? 0f : GetAxisFromBindings("MoveRight", "MoveLeft"));
         float rollSpeed = (horIn < 0.001f) ? tiltRollReturnSpeed : tiltRollSpeed;
 
         fxRoll = Mathf.Lerp(fxRoll, targetRoll, Time.deltaTime * rollSpeed);
@@ -623,9 +586,83 @@ public class PlayerController : MonoBehaviour {
         pos.y += bobOffset + kickOffsetY;
         if (playerCamera != null) {
             playerCamera.transform.localPosition = pos;
-
             float finalRoll = Mathf.Clamp(fxRoll + rollPulse, -rollClamp, rollClamp);
-            playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch, 0f, finalRoll);
+            float yawToApply = useBodyRotation ? 0f : currentYaw;
+            playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch, yawToApply, finalRoll);
+        }
+    }
+
+    public void SetRestrictedMode(
+        bool moveLocked,
+        bool bodyRot,
+        bool lockX,
+        bool lockY,
+        Vector2 sensMult,
+        bool yawClamp,
+        float minY,
+        float maxY,
+        bool freezeRigidbodyPos = false,
+        bool setKinematic = false,
+        bool headlampLocked = false) {
+        this.isMovementLocked = moveLocked;
+        this.useBodyRotation = bodyRot;
+        this.lockLookX = lockX;
+        this.lockLookY = lockY;
+        this.lookSensitivityMultiplier = sensMult;
+        this.useYawClamp = yawClamp;
+        this.minYawLimit = minY;
+        this.maxYawLimit = maxY;
+
+        isHeadlampInputLocked = headlampLocked;
+        if (headlampController != null)
+            headlampController.SetInputLocked(headlampLocked);
+
+        if (moveLocked) {
+            if (!rb.isKinematic) {
+                rb.linearVelocity = Vector3.zero;
+            }
+            sprinting = false;
+        }
+
+        if (!bodyRot) {
+            currentYaw = 0f;
+        }
+
+        if (freezeRigidbodyPos) {
+            rb.constraints = defaultConstraints | RigidbodyConstraints.FreezePosition;
+        } else {
+            rb.constraints = defaultConstraints;
+        }
+
+        rb.isKinematic = setKinematic;
+    }
+
+    public void SetOverrideBaseFOV(float newFov) {
+        baseFOV = newFov;
+        if (playerCamera != null) {
+            playerCamera.fieldOfView = newFov;
+        }
+    }
+
+    public void ResetCameraRotation(bool forceZero = false) {
+        if (forceZero) {
+            pitch = 0f;
+            currentYaw = 0f;
+            if (playerCamera != null) {
+                playerCamera.transform.localRotation = Quaternion.identity;
+            }
+        } else {
+            if (playerCamera != null) {
+                Vector3 euler = playerCamera.transform.localEulerAngles;
+
+                float p = euler.x;
+                if (p > 180f) p -= 360f;
+                pitch = p;
+
+                float y = euler.y;
+                if (y > 180f) y -= 360f;
+                currentYaw = y;
+            }
         }
     }
 
@@ -645,16 +682,11 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void UpdateSprintStamina(bool wantsSprint) {
-        bool canSprint =
-            !isExhausted &&
-            sprintStamina > 0f;
-
+        bool canSprint = !isExhausted && sprintStamina > 0f;
         bool willSprint = wantsSprint && canSprint;
-
         if (willSprint) {
             sprinting = true;
             timeSinceStoppedSprint = 0f;
-
             sprintStamina -= sprintDrainPerSecond * Time.deltaTime;
             if (sprintStamina <= 0f) {
                 sprintStamina = 0f;
@@ -669,11 +701,9 @@ public class PlayerController : MonoBehaviour {
             } else {
                 timeSinceStoppedSprint += Time.deltaTime;
             }
-
             if (timeSinceStoppedSprint >= sprintRegenDelay) {
                 sprintStamina += sprintRegenPerSecond * Time.deltaTime;
                 sprintStamina = Mathf.Min(sprintStamina, sprintStaminaMax);
-
                 if (isExhausted && Mathf.Approximately(sprintStamina, sprintStaminaMax)) {
                     isExhausted = false;
                 }
@@ -683,17 +713,14 @@ public class PlayerController : MonoBehaviour {
 
     private void UpdateFootstepAudio(float hzSpeed) {
         bool movingOnGround = grounded && !onTooSteep && hzSpeed > 0.1f;
-
         if (movingOnGround) {
             float interval = sprinting ? runStepInterval : walkStepInterval;
-
             if (sprinting != wasSprintingForSteps) {
                 PlayFootstep();
                 footstepTimer = interval;
                 wasSprintingForSteps = sprinting;
                 return;
             }
-
             footstepTimer -= Time.deltaTime;
             if (footstepTimer <= 0f) {
                 PlayFootstep();
@@ -706,66 +733,43 @@ public class PlayerController : MonoBehaviour {
     }
 
     private void PlayFootstep() {
-        if (footstepSource == null || footstepClips.Count == 0)
-            return;
-
+        if (footstepSource == null || footstepClips.Count == 0) return;
         int count = footstepClips.Count;
         int index = Random.Range(0, count);
-
-        if (count > 1 && index == lastFootstepIndex) {
-            index = (index + 1) % count;
-        }
-
+        if (count > 1 && index == lastFootstepIndex) index = (index + 1) % count;
         lastFootstepIndex = index;
-
         footstepSource.PlayOneShot(footstepClips[index]);
     }
 
     private void PlayJumpSound() {
-        if (jumpSoundPlayed) {
-            return;
-        }
-
-        if (jumpClip != null && actionSource != null) {
-            actionSource.PlayOneShot(jumpClip);
-        }
-
+        if (jumpSoundPlayed) return;
+        if (jumpClip != null && actionSource != null) actionSource.PlayOneShot(jumpClip);
         jumpSoundPlayed = true;
     }
 
     private void PlayLandSound() {
-        if (landClip != null && actionSource != null) {
-            actionSource.PlayOneShot(landClip);
-        }
+        if (landClip != null && actionSource != null) actionSource.PlayOneShot(landClip);
     }
 
     private bool IsActionPressed(string actionId) {
-        if (inputSettingsManager != null) {
-            return inputSettingsManager.GetKey(actionId);
-        }
-
+        if (inputSettingsManager != null) return inputSettingsManager.GetKey(actionId);
         if (actionId == "MoveForward") return Input.GetKey(KeyCode.W);
         if (actionId == "MoveBackward") return Input.GetKey(KeyCode.S);
         if (actionId == "MoveLeft") return Input.GetKey(KeyCode.A);
         if (actionId == "MoveRight") return Input.GetKey(KeyCode.D);
         if (actionId == "Run") return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         if (actionId == "Jump") return Input.GetKey(KeyCode.Space);
-
         return false;
     }
 
     private bool IsActionDown(string actionId) {
-        if (inputSettingsManager != null) {
-            return inputSettingsManager.GetKeyDown(actionId);
-        }
-
+        if (inputSettingsManager != null) return inputSettingsManager.GetKeyDown(actionId);
         if (actionId == "MoveForward") return Input.GetKeyDown(KeyCode.W);
         if (actionId == "MoveBackward") return Input.GetKeyDown(KeyCode.S);
         if (actionId == "MoveLeft") return Input.GetKeyDown(KeyCode.A);
         if (actionId == "MoveRight") return Input.GetKeyDown(KeyCode.D);
         if (actionId == "Run") return Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift);
         if (actionId == "Jump") return Input.GetKeyDown(KeyCode.Space);
-
         return false;
     }
 
@@ -773,13 +777,9 @@ public class PlayerController : MonoBehaviour {
         if (inputSettingsManager != null) {
             bool pos = inputSettingsManager.GetKey(positiveAction);
             bool neg = inputSettingsManager.GetKey(negativeAction);
-
-            if (pos == neg) {
-                return 0f;
-            }
+            if (pos == neg) return 0f;
             return pos ? 1f : -1f;
         }
-
         float v = 0f;
         if (IsActionPressed(positiveAction)) v += 1f;
         if (IsActionPressed(negativeAction)) v -= 1f;
@@ -801,17 +801,14 @@ public class PlayerController : MonoBehaviour {
             rb.position = pos;
             rb.linearVelocity = Vector3.zero;
         }
-
         transform.position = pos;
         transform.rotation = rot;
-
         pitch = pitchIn;
         if (playerCamera != null) {
             Vector3 euler = playerCamera.transform.localEulerAngles;
             euler.x = pitchIn;
             playerCamera.transform.localEulerAngles = euler;
         }
-
         sprintStamina = Mathf.Clamp(stamina, 0f, sprintStaminaMax);
         isExhausted = exhausted;
     }

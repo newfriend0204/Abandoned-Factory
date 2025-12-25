@@ -15,7 +15,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
     public float checkpointFadeDuration = 0.3f;
     public float checkpointHoldDuration = 4f;
 
-    // ==== 런타임/공유 체크포인트 데이터 ====
     private static Chap1CheckpointData sharedData;
     private Chap1CheckpointData current;
     private bool isLoading = false;
@@ -50,11 +49,9 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
         DontDestroyOnLoad(gameObject);
 
-        // 메인 메뉴에서 LoadSharedDataFromFile()를 미리 호출했으면 여기로 들어온다.
         if (sharedData != null)
             current = sharedData;
 
-        // 혹시 SaveSystem.Current에 chap1 데이터가 올라와 있는 경우도 보정
         if (current == null && SaveSystem.Current != null && SaveSystem.Current.chap1 != null &&
             SaveSystem.Current.chap1.hasCheckpoint && SaveSystem.Current.chap1.last != null) {
             current = SaveSystem.Current.chap1.last;
@@ -75,8 +72,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
             CheckpointService.Register(null);
     }
 
-    // === Save File (SaveSystem 위임) ===
-
     public static bool HasSaveFile {
         get {
             return SaveSystem.HasFile;
@@ -96,10 +91,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         }
     }
 
-    /// <summary>
-    /// 메인 메뉴에서 "이어하기"를 누를 때 호출.
-    /// SaveSystem를 통해 세이브 파일을 읽고, chap1 체크포인트를 sharedData에 올려둔다.
-    /// </summary>
     public static bool LoadSharedDataFromFile() {
         if (!SaveSystem.LoadFromDisk()) {
             Debug.Log("[Chap1CheckpointManager] 저장된 세이브 파일이 없습니다.");
@@ -141,9 +132,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         return defaultSceneName;
     }
 
-    /// <summary>
-    /// Instance.current를 SaveSystem.Current.chap1 / player에 반영하고 파일로 저장.
-    /// </summary>
     private static void SaveSharedDataToFile() {
         if (Instance == null || Instance.current == null)
             return;
@@ -159,12 +147,11 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         if (data.player == null)
             data.player = new PlayerGlobalData();
 
-        data.currentChapter = 1; // 아직은 Chap1만 사용
+        data.currentChapter = 1;
 
         data.chap1.hasCheckpoint = true;
         data.chap1.last = Instance.current;
 
-        // 전역 플레이어 상태도 함께 저장 (나중에 Chap2에서 사용할 수 있음)
         data.player.hasHeadlamp = Instance.current.hasHeadlamp;
         data.player.savedSprintStamina = Instance.current.playerSprintStamina;
         data.player.savedIsExhausted = Instance.current.playerIsExhausted;
@@ -182,23 +169,17 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
         }
     }
 
-    // 씬이 로드될 때마다 호출됨
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
-        // 혹시 다른 씬에서도 이 매니저를 쓴다고 해도, 우리는 Instance인 경우만 처리
         if (Instance != this)
             return;
 
-        // 새 씬의 FadeOverlay / SaveCheckPoint 다시 찾기
         FindSceneOverlays();
 
-        // "메인 메뉴에서 이어하기"로 이 씬에 들어온 경우만 처리
         if (autoLoadOnSceneStart && current != null && scene.name == current.sceneName) {
             autoLoadOnSceneStart = false;
 
-            // 인트로는 한번 스킵
             Chap1IntroSequence.skipIntroOnce = true;
 
-            // Start() 들이 한 프레임 돌고 난 다음에 적용되도록 코루틴
             StartCoroutine(CoApplyCheckpointOnSceneLoaded());
         }
     }
@@ -206,13 +187,10 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
     private IEnumerator CoApplyCheckpointOnSceneLoaded() {
         isLoading = true;
 
-        // 한 프레임 기다려서, ScenePlayerStateApplier / Intro 등 Start() 먼저 돌게 함
         yield return null;
 
-        // 인트로 비활성화 시도 (있으면)
         TryDisableIntroSequenceOnGameManager();
 
-        // 현재 씬에 체크포인트 데이터 반영 (위치, 회전, 스태미나, 헤드램프, 퍼즐 상태 등)
         ApplyCheckpointToScene();
 
         isLoading = false;
@@ -276,7 +254,6 @@ public class Chap1CheckpointManager : MonoBehaviour, ICheckpointService {
 
         sharedData = current;
 
-        // SaveSystem로 디스크에 저장
         SaveSharedDataToFile();
 
         Debug.Log($"[Chap1CheckpointManager] 체크포인트 저장 완료 (scene='{current.sceneName}')");

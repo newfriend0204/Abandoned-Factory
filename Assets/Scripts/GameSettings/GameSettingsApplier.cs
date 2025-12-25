@@ -291,13 +291,14 @@ public class GameSettingsApplier : MonoBehaviour {
     }
 
     public void ApplyBrightness() {
-        float b = SettingsManager.Instance.GetFloat("Brightness", 1.0f);
-        b = Mathf.Clamp(b, 0.5f, 1.5f);
+        //float b = SettingsManager.Instance.GetFloat("Brightness", 1.0f);
+        //b = Mathf.Clamp(b, 0.5f, 1.5f);
 
-        float intensity = 0.3f * b + 0.2f;
+        //float intensity = 0.3f * b + 0.2f;
 
-        RenderSettings.ambientIntensity = intensity;
-        RenderSettings.reflectionIntensity = intensity;
+        //RenderSettings.ambientIntensity = intensity;
+        //RenderSettings.reflectionIntensity = intensity;
+        //디버그, 나중에 다시 주석 풀기
     }
 
     public void ApplyCrosshair() {
@@ -346,10 +347,6 @@ public class GameSettingsApplier : MonoBehaviour {
         Application.runInBackground = run;
     }
 
-    // ------------------------------------------------
-    //  오디오 볼륨 (0~100 정수)
-    //  MasterVolume, BgmVolume, SfxVolume, AmbientVolume
-    // ------------------------------------------------
     public void ApplyAudioVolumes() {
         if (masterMixer == null) {
             return;

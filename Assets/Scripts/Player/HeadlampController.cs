@@ -39,9 +39,56 @@ public class HeadlampController : MonoBehaviour {
     public AudioClip clickOn;
     public AudioClip clickOff;
 
+    [Header("Input Lock")]
+    public bool inputLocked = false;
+    public bool forceOffWhileLocked = true;
+    public bool restoreAfterUnlock = true;
+
     bool isOn;
     float fadeBase;
     Coroutine fading;
+
+    bool savedStateValid;
+    bool savedIsOn;
+
+    public void SetInputLocked(bool locked) {
+        if (inputLocked == locked)
+            return;
+
+        inputLocked = locked;
+
+        if (inputLocked) {
+            savedStateValid = true;
+            savedIsOn = isOn;
+            if (forceOffWhileLocked)
+                EnsureOffSilently();
+        } else {
+            if (restoreAfterUnlock && savedStateValid && savedIsOn)
+                EnsureOnSilently();
+            savedStateValid = false;
+        }
+    }
+
+    private void EnsureOffSilently() {
+        if (!isOn && fadeBase <= 0.001f)
+            return;
+
+        isOn = false;
+        if (fading != null)
+            StopCoroutine(fading);
+        fading = StartCoroutine(FadeBase(0f, fadeTime));
+    }
+
+    private void EnsureOnSilently() {
+        if (isOn && fadeBase >= onIntensity - 0.001f)
+            return;
+
+        isOn = true;
+        if (fading != null)
+            StopCoroutine(fading);
+        fading = StartCoroutine(FadeBase(onIntensity, fadeTime));
+        ScheduleNextDip();
+    }
 
     float noiseSeed;
     float nextDipTime;
@@ -74,7 +121,12 @@ public class HeadlampController : MonoBehaviour {
             return;
         }
 
-        if (!Mathf.Approximately(Time.timeScale, 0f)) {
+        if (inputLocked) {
+            if (forceOffWhileLocked)
+                EnsureOffSilently();
+        }
+
+        if (!inputLocked && !Mathf.Approximately(Time.timeScale, 0f)) {
             bool togglePressed = false;
 
             var input = InputSettingsManager.Instance;

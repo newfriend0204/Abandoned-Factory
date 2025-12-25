@@ -126,4 +126,34 @@ public class TutorialHintUI : MonoBehaviour {
 
         currentRoutine = null;
     }
+
+    public void ShowCustomPersistent(string message) {
+        if (tutorialText == null || canvasGroup == null)
+            return;
+
+        if (currentRoutine != null)
+            StopCoroutine(currentRoutine);
+
+        tutorialText.text = message;
+
+        canvasGroup.alpha = 1f;
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+
+        currentRoutine = null;
+    }
+
+    public void HideImmediate() {
+        if (tutorialText == null || canvasGroup == null)
+            return;
+
+        if (currentRoutine != null)
+            StopCoroutine(currentRoutine);
+
+        canvasGroup.alpha = 0f;
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+
+        currentRoutine = null;
+    }
 }

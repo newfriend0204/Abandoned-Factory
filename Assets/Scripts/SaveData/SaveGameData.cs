@@ -5,11 +5,11 @@ using UnityEngine;
 [Serializable]
 public class SaveGameData {
     public int slotVersion = 1;
-    public int currentChapter = 1;   // 1 = Chap1, 나중에 2 = Chap2 ...
+    public int currentChapter = 1;
 
     public PlayerGlobalData player = new PlayerGlobalData();
     public Chap1SaveData chap1 = new Chap1SaveData();
-    public Chap2SaveData chap2 = new Chap2SaveData(); // 아직은 비어있어도 됨
+    public Chap2SaveData chap2 = new Chap2SaveData();
 }
 
 [Serializable]
@@ -44,13 +44,25 @@ public class Chap1CheckpointData {
     public bool hasHeadlamp;
 }
 
-[System.Serializable]
+[Serializable]
 public class Chap2SaveData {
     public bool hasCheckpoint = false;
     public Chap2CheckpointData last;
+
+    public int chap2StateInt = 0;
+
+    public int yCurrentStep = 1;
+
+    public List<Chap2StepCheckpointEntry> stepCheckpoints = new List<Chap2StepCheckpointEntry>();
 }
 
-[System.Serializable]
+[Serializable]
+public class Chap2StepCheckpointEntry {
+    public int step;
+    public Chap2CheckpointData data;
+}
+
+[Serializable]
 public class Chap2CheckpointData {
     public string sceneName;
 

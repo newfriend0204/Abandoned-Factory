@@ -24,7 +24,6 @@ public class Chap1ToChap2Door : MonoBehaviour {
             state.CaptureFromScene(player, headlamp);
         }
 
-        // 필요하면 여기서 페이드아웃 연출, 사운드 등 넣고
         SceneManager.LoadScene(nextSceneName);
     }
 }
