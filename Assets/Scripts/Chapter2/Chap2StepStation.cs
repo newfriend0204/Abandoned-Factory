@@ -189,11 +189,23 @@ public class Chap2StepStation : MonoBehaviour {
             ReleasePressedElement();
 
         Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
-        bool hitAny = Physics.Raycast(ray, out RaycastHit hit, elementRayDistance);
 
         Chap2StepElement newHover = null;
-        if (hitAny)
-            newHover = hit.collider.GetComponentInParent<Chap2StepElement>();
+        float bestDist = float.PositiveInfinity;
+
+        float dist = Mathf.Max(0.01f, elementRayDistance);
+        RaycastHit[] hits = Physics.RaycastAll(ray, dist, ~0, QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < hits.Length; i++) {
+            Chap2StepElement e = hits[i].collider.GetComponentInParent<Chap2StepElement>();
+            if (e == null)
+                continue;
+
+            if (hits[i].distance < bestDist) {
+                bestDist = hits[i].distance;
+                newHover = e;
+            }
+        }
 
         if (newHover != hoveredElement) {
             if (hoveredElement != null)

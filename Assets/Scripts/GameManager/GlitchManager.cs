@@ -200,7 +200,7 @@ public class GlitchManager : MonoBehaviour {
         float fov01 = 1f - Mathf.InverseLerp(inner, outer, angle);
         fov01 = Mathf.Clamp01(fov01);
 
-        if (useLineOfSightForView && viewInfluence > 0.0001f) {
+        if (useLineOfSightForView) {
             if (!HasLineOfSight(camPos, targetPos, dist))
                 fov01 = 0f;
         }
@@ -213,9 +213,11 @@ public class GlitchManager : MonoBehaviour {
         float speed = viewTarget01 > smoothedView01 ? rise : fall;
         smoothedView01 = Mathf.MoveTowards(smoothedView01, viewTarget01, Time.unscaledDeltaTime * speed);
 
-        float raw =
-            (dist01 * Mathf.Max(0f, distanceInfluence)) +
-            (smoothedView01 * Mathf.Max(0f, viewInfluence));
+        float visible01 = smoothedView01;
+        float raw = visible01 * (
+            Mathf.Max(0f, viewInfluence) +
+            (dist01 * Mathf.Max(0f, distanceInfluence))
+        );
 
         raw = Mathf.Clamp01(raw) * Mathf.Clamp01(maxStrength);
 

@@ -17,6 +17,12 @@ public class Chap2MonsterController : MonoBehaviour {
         Vanishing
     }
 
+    private enum MonsterExitReason {
+        None,
+        LookAwayRetreat,
+        QteWinVanish
+    }
+
     [Header("Monster Refs")]
     [SerializeField] private Transform monsterRoot;
     [SerializeField] private Animator monsterAnimator;
@@ -48,6 +54,11 @@ public class Chap2MonsterController : MonoBehaviour {
     [SerializeField] private float noRetreatAfterT = 0.6f;
     [SerializeField] private float lookTimeToScare = 1.2f;
     [SerializeField] private float maxViewDistance = 40f;
+
+    [Header("Look-Away Line Of Sight")]
+    [SerializeField] private bool useLineOfSightForLookAway = true;
+    [SerializeField] private LayerMask lookAwayOcclusionMask = ~0;
+    [SerializeField] private float lookAwayTargetHeight = 1.4f;
 
     [Header("Player & Spawn Proximity")]
     [SerializeField] private Transform player;
@@ -89,6 +100,12 @@ public class Chap2MonsterController : MonoBehaviour {
     [SerializeField] private float respawnDelaySeconds = 3.0f;
     [SerializeField] private bool respawnIgnorePlayerView = true;
 
+    [Tooltip("After the monster retreats because the player stared at it (look-away reaction).")]
+    [SerializeField] private float respawnDelayAfterLookAwaySeconds = 2.0f;
+
+    [Tooltip("After the player wins the locker QTE and the monster vanishes.")]
+    [SerializeField] private float respawnDelayAfterQteWinSeconds = 6.0f;
+
     [Header("View Reaction (Normal Feature)")]
     [SerializeField] private bool defaultIgnorePlayerViewReaction = false;
 
@@ -120,6 +137,14 @@ public class Chap2MonsterController : MonoBehaviour {
 
     private float respawnTimer = 0f;
     private Coroutine waitCoroutine;
+    private MonsterExitReason lastExitReason = MonsterExitReason.None;
+
+    private bool forceAllowViewReactionThisSpawn = false;
+
+    private bool hasScheduledSpawn = false;
+    private bool scheduledSpawnUseBranch = false;
+    private MonsterBranch scheduledSpawnBranch = MonsterBranch.Center;
+    private bool scheduledSpawnIgnoreView = false;
 
     private LockerInteractable currentLocker;
     private Transform currentLockerPoint;
@@ -185,6 +210,16 @@ public class Chap2MonsterController : MonoBehaviour {
         UpdateAutoRespawn();
     }
 
+    private float GetRespawnDelaySeconds() {
+        if (lastExitReason == MonsterExitReason.LookAwayRetreat)
+            return Mathf.Max(0f, respawnDelayAfterLookAwaySeconds);
+
+        if (lastExitReason == MonsterExitReason.QteWinVanish)
+            return Mathf.Max(0f, respawnDelayAfterQteWinSeconds);
+
+        return Mathf.Max(0f, respawnDelaySeconds);
+    }
+
     private void UpdateAutoRespawn() {
         if (!autoRespawnWhileYSequence)
             return;
@@ -201,11 +236,31 @@ public class Chap2MonsterController : MonoBehaviour {
             return;
 
         respawnTimer += Time.deltaTime;
-        if (respawnTimer < respawnDelaySeconds)
+        if (respawnTimer < GetRespawnDelaySeconds())
             return;
 
         respawnTimer = 0f;
-        StartFromRandomBranch(respawnIgnorePlayerView);
+
+        if (hasScheduledSpawn) {
+            bool useBranch = scheduledSpawnUseBranch;
+            MonsterBranch b = scheduledSpawnBranch;
+            bool ignoreView = scheduledSpawnIgnoreView;
+
+            hasScheduledSpawn = false;
+            scheduledSpawnUseBranch = false;
+
+            if (useBranch)
+                StartFromBranch(b, ignoreView);
+            else
+                StartFromRandomBranch(ignoreView);
+
+            return;
+        }
+
+        if (lastExitReason == MonsterExitReason.LookAwayRetreat)
+            forceAllowViewReactionThisSpawn = true;
+        
+        StartFromRandomBranch(false);
     }
 
     public bool IsCompletelyGone {
@@ -236,7 +291,16 @@ public class Chap2MonsterController : MonoBehaviour {
             return;
 
         currentBranch = branch;
-        ignoreViewForCurrentRun = defaultIgnorePlayerViewReaction || ignoreView;
+        lastExitReason = MonsterExitReason.None;
+        respawnTimer = 0f;
+        if (forceAllowViewReactionThisSpawn)
+            ignoreViewForCurrentRun = false;
+        else
+            ignoreViewForCurrentRun = defaultIgnorePlayerViewReaction || ignoreView;
+
+        forceAllowViewReactionThisSpawn = false;
+        hasScheduledSpawn = false;
+        scheduledSpawnUseBranch = false;
 
         branchStartPos = branchStartPoints[index].position;
         groundY = branchStartPos.y;
@@ -292,6 +356,29 @@ public class Chap2MonsterController : MonoBehaviour {
         monsterState = MonsterState.Approaching;
     }
 
+    public void BeginYSequenceSpawnDelay() {
+        ForceHide();
+
+        lastExitReason = MonsterExitReason.QteWinVanish;
+        respawnTimer = 0f;
+
+        hasScheduledSpawn = true;
+        scheduledSpawnUseBranch = false;
+        scheduledSpawnIgnoreView = false;
+    }
+
+    public void BeginYSequenceSpawnDelayFromBranch(MonsterBranch branch, bool ignoreView = false) {
+        ForceHide();
+
+        lastExitReason = MonsterExitReason.QteWinVanish;
+        respawnTimer = 0f;
+
+        hasScheduledSpawn = true;
+        scheduledSpawnUseBranch = true;
+        scheduledSpawnBranch = branch;
+        scheduledSpawnIgnoreView = ignoreView;
+    }
+
     public void ForceHide() {
         if (waitCoroutine != null)
             StopCoroutine(waitCoroutine);
@@ -303,6 +390,7 @@ public class Chap2MonsterController : MonoBehaviour {
 
         monsterState = MonsterState.Inactive;
         hasPendingRespawn = false;
+        respawnTimer = 0f;
 
         currentLocker = null;
         currentLockerPoint = null;
@@ -362,6 +450,7 @@ public class Chap2MonsterController : MonoBehaviour {
         if (waitCoroutine != null)
             StopCoroutine(waitCoroutine);
 
+        lastExitReason = MonsterExitReason.QteWinVanish;
         waitCoroutine = StartCoroutine(CoStareThenVanish());
     }
 
@@ -1107,6 +1196,14 @@ public class Chap2MonsterController : MonoBehaviour {
             return;
         }
 
+        if (useLineOfSightForLookAway) {
+            Vector3 losTargetPos = monsterRoot.position + Vector3.up * lookAwayTargetHeight;
+            if (!HasLookAwayLineOfSight(camPos, losTargetPos)) {
+                lookTimer = Mathf.Max(0f, lookTimer - Time.deltaTime * 0.5f);
+                return;
+            }
+        }
+
         toMonster.y = 0f;
         if (toMonster.sqrMagnitude < 0.0001f)
             return;
@@ -1116,12 +1213,44 @@ public class Chap2MonsterController : MonoBehaviour {
         if (Vector3.Dot(camFwd, toMonster) >= cosViewThreshold) {
             lookTimer += Time.deltaTime;
             if (lookTimer >= lookTimeToScare) {
+                lastExitReason = MonsterExitReason.LookAwayRetreat;
                 StartRetreat(false);
                 lookTimer = 0f;
             }
         } else {
             lookTimer = Mathf.Max(0f, lookTimer - Time.deltaTime * 0.5f);
         }
+    }
+
+    bool HasLookAwayLineOfSight(Vector3 from, Vector3 to) {
+        Vector3 dir = to - from;
+        float dist = dir.magnitude;
+        if (dist <= 0.001f)
+            return true;
+
+        dir /= dist;
+
+        RaycastHit[] hits = Physics.RaycastAll(from, dir, dist, lookAwayOcclusionMask, QueryTriggerInteraction.Ignore);
+        if (hits == null || hits.Length == 0)
+            return true;
+
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        for (int i = 0; i < hits.Length; i++) {
+            Transform hitTr = hits[i].transform;
+            if (hitTr == null)
+                continue;
+
+            if (player != null && hitTr.IsChildOf(player))
+                continue;
+
+            if (monsterRoot != null && hitTr.IsChildOf(monsterRoot))
+                return true;
+
+            return false;
+        }
+
+        return true;
     }
 
     private void CheckPlayerNearSpawnPoints() {

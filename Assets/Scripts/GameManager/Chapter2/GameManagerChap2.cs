@@ -271,7 +271,7 @@ public class GameManagerChap2 : MonoBehaviour {
             return;
         }
 
-        monsterController.StartFromRandomBranch(false);
+        monsterController.BeginYSequenceSpawnDelay();
     }
 
     public void StartYSequenceFromBranch(Chap2MonsterController.MonsterBranch branch, bool ignoreView = false) {
@@ -285,7 +285,7 @@ public class GameManagerChap2 : MonoBehaviour {
             return;
         }
 
-        monsterController.StartFromBranch(branch, ignoreView);
+        monsterController.BeginYSequenceSpawnDelayFromBranch(branch, ignoreView);
     }
 
     public void ReportPlayerHiding(LockerInteractable locker) {

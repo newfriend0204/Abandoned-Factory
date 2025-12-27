@@ -36,6 +36,11 @@ public class LockerQTEManager : MonoBehaviour {
     [SerializeField] private float camShakeSmoothTime = 0.06f;
     [SerializeField] private float camDangerExponent = 1.2f;
 
+    [Header("Hit Impulse (Locker Rattle)")]
+    [SerializeField, Range(0f, 1f)] private float hitImpulseAdd = 0.55f;
+    [SerializeField] private float hitImpulseDecayTime = 0.18f;
+    [SerializeField, Range(0f, 2f)] private float hitImpulseStrengthMultiplier = 1.0f;
+
     [Header("Timing")]
     [SerializeField] private float startDelay = 1f;
     [SerializeField] private float surviveTime = 2.5f;
@@ -124,6 +129,7 @@ public class LockerQTEManager : MonoBehaviour {
     private Vector3 camBaseLocalPos;
     private Quaternion camBaseLocalRot;
     private bool camBaseCaptured = false;
+    private float hitImpulse01 = 0f;
 
     private Vector3 camPosVel = Vector3.zero;
     private Vector3 camRotVel = Vector3.zero;
@@ -132,6 +138,8 @@ public class LockerQTEManager : MonoBehaviour {
 
     private float doorKickOffset = 0f;
     private float doorKickVel = 0f;
+
+    private bool wasRunningLastFrame = false;
 
     public bool IsRunning => running;
     public LockerInteractable CurrentLocker => locker;
@@ -201,8 +209,18 @@ public class LockerQTEManager : MonoBehaviour {
 
     void Update() {
         if (!running) {
-            ApplyCameraShake(false);
+            if (wasRunningLastFrame)
+                ApplyCameraShake(false);
+
+            wasRunningLastFrame = false;
             return;
+        }
+
+        wasRunningLastFrame = true;
+
+        if (hitImpulse01 > 0f) {
+            float decay = Mathf.Max(0.01f, hitImpulseDecayTime);
+            hitImpulse01 = Mathf.MoveTowards(hitImpulse01, 0f, Time.deltaTime / decay);
         }
 
         ApplyCameraShake(true);
@@ -521,6 +539,8 @@ public class LockerQTEManager : MonoBehaviour {
 
         ResetUIFxImmediate();
         ApplyCameraShake(false);
+
+        wasRunningLastFrame = false;
     }
 
     IEnumerator CoCloseDoorFastThenRestoreAnimatorAndFinalize() {
@@ -633,6 +653,14 @@ public class LockerQTEManager : MonoBehaviour {
             return;
 
         hitSource.PlayOneShot(clip);
+        TriggerHitImpulse();
+    }
+
+    private void TriggerHitImpulse() {
+        if (!enableCameraShake)
+            return;
+
+        hitImpulse01 = Mathf.Clamp01(hitImpulse01 + Mathf.Clamp01(hitImpulseAdd));
     }
 
     public void PlayRandomLeaveMonologue() {
@@ -832,11 +860,15 @@ public class LockerQTEManager : MonoBehaviour {
             camRotOffset = Vector3.zero;
             camPosVel = Vector3.zero;
             camRotVel = Vector3.zero;
+            hitImpulse01 = 0f;
             return;
         }
 
-        float danger = Mathf.Clamp01(1f - fill);
-        danger = Mathf.Pow(danger, Mathf.Max(0.01f, camDangerExponent));
+        float baseDanger = Mathf.Clamp01(1f - fill);
+        baseDanger = Mathf.Pow(baseDanger, Mathf.Max(0.01f, camDangerExponent));
+
+        float hitDanger = Mathf.Clamp01(hitImpulse01) * Mathf.Max(0f, hitImpulseStrengthMultiplier);
+        float danger = Mathf.Clamp01(Mathf.Max(baseDanger, hitDanger));
 
         float freq = Mathf.Max(0.01f, camShakeFrequency);
 

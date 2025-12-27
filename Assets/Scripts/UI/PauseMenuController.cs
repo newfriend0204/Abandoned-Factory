@@ -59,6 +59,7 @@ public class PauseMenuController : MonoBehaviour {
 
     void Start() {
         Time.timeScale = 1f;
+        AudioListener.pause = false;
 
         pauseRoot.SetActive(false);
         pauseScreenRoot.SetActive(false);
@@ -158,6 +159,7 @@ public class PauseMenuController : MonoBehaviour {
     void PauseGame() {
         isPaused = true;
         Time.timeScale = 0f;
+        AudioListener.pause = true;
 
         pauseRoot.SetActive(true);
         pauseScreenRoot.SetActive(true);
@@ -167,6 +169,7 @@ public class PauseMenuController : MonoBehaviour {
     void ResumeGame() {
         isPaused = false;
         Time.timeScale = 1f;
+        AudioListener.pause = false;
 
         pauseRoot.SetActive(false);
         pauseScreenRoot.SetActive(false);
@@ -514,6 +517,7 @@ public class PauseMenuController : MonoBehaviour {
 
     void ExecuteMoveToMainMenu() {
         Time.timeScale = 1f;
+        AudioListener.pause = false;
         isPaused = false;
 
         if (pauseRoot != null) pauseRoot.SetActive(false);
