@@ -67,7 +67,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 42ecc47aa5868c74780c841272932811, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -178,7 +178,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 9072ab99039790a44af5573cb193e2ad, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -289,7 +289,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: cd8e63b515ddb1842814602173297727, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -579,7 +579,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: f748f00360cf9bf4ab2866565fa03c0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -672,12 +672,15 @@ MonoBehaviour:
   targetText: {fileID: 4127719074264984945}
   maxVisibleLines: 24
   charactersPerSecond: 220
+  maxCharsPerFrame: 48
   hitchChance: 0.04
   hitchMinSeconds: 0.02
   hitchMaxSeconds: 0.08
+  safetyMaxCharsPerFrame: 4096
   enableCursor: 1
   cursorBlinkInterval: 0.5
   headerText: Hello World!
+  headerSeparator: ================================================================
 --- !u!1 &9067214625193521835
 GameObject:
   m_ObjectHideFlags: 0
