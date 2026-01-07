@@ -47,11 +47,6 @@ public class GameManagerChap1 : MonoBehaviour {
     private Coroutine getAnimRoutine;
     private TextMeshProUGUI getText;
 
-    [Header("Inspect UI")]
-    public GameObject inspectRoot;
-    public List<GameObject> inspectItems = new List<GameObject>();
-    private float prevTimeScale = 1f;
-
     [Header("Aux Power")]
     public List<Light> auxPowerLights = new List<Light>();
     [SerializeField] private List<int> auxPowerStates = new List<int> { 0, 0, 0, 0 };
@@ -87,9 +82,23 @@ public class GameManagerChap1 : MonoBehaviour {
         public Transform t;
         public float dist;
     }
+
     [Header("Street Lamps")]
     [SerializeField] private float lampStepInterval = 0.10f;
     private List<StreetLampNode> streetLamps = new List<StreetLampNode>();
+
+    [Header("Main Fan")]
+    [SerializeField] private Animator mainFanAnimator;
+    [SerializeField] private AudioSource mainFanAudio;
+    [SerializeField] private float fanBaseSpeed = 1f;
+    [SerializeField] private float fanBoostSpeed = 2f;
+    [SerializeField] private float fanBaseVolume = 0.3f;
+    [SerializeField] private float fanBoostVolume = 1f;
+    [SerializeField] private float fanBasePitch = 1f;
+    [SerializeField] private float fanBoostPitch = 1.15f;
+
+    [SerializeField] private float fanRampDuration = 2f;
+    private Coroutine fanRampRoutine;
 
     private void Awake() {
         getRect = getObject.GetComponent<RectTransform>();
@@ -100,14 +109,13 @@ public class GameManagerChap1 : MonoBehaviour {
         getImage.color = c;
         getRect.anchoredPosition = getBaseAnchoredPos;
         getText = getObject.transform.Find("GetText").GetComponent<TextMeshProUGUI>();
-        inspectRoot.SetActive(false);
-        for (int i = 0; i < inspectItems.Count; i++)
-            inspectItems[i].SetActive(false);
         NormalizeAuxStates();
         ApplyAuxColors();
 
         CollectAndPrepareStreetLamps();
         InitializePipePuzzle();
+
+        ApplyFanImmediateForCurrentState();
     }
 
     private void LateUpdate() {
@@ -128,6 +136,11 @@ public class GameManagerChap1 : MonoBehaviour {
         }
         getVisible = false;
         getObject.SetActive(false);
+
+        if (fanRampRoutine != null) {
+            StopCoroutine(fanRampRoutine);
+            fanRampRoutine = null;
+        }
     }
 
     public void StartHunt(ButtonChecker originChecker) {
@@ -202,6 +215,10 @@ public class GameManagerChap1 : MonoBehaviour {
             getText.text = $"돌리기({keyLabel})";
         else if (mode == 4)
             getText.text = $"줍기({keyLabel})";
+        else if (mode == 5)
+            getText.text = $"누르기(좌클릭)";
+        else if (mode == 6)
+            getText.text = $"내리기({keyLabel})";
         pressablePinged = true;
     }
 
@@ -230,34 +247,6 @@ public class GameManagerChap1 : MonoBehaviour {
         return string.Join(", ", parts);
     }
 
-    public void Inspect(string sourceName) {
-        for (int i = 0; i < inspectItems.Count; i++)
-            inspectItems[i].SetActive(false);
-        GameObject target = null;
-        for (int i = 0; i < inspectItems.Count; i++) {
-            var go = inspectItems[i];
-            if (go.name == sourceName) {
-                target = go;
-                break;
-            }
-        }
-        target.SetActive(true);
-        inspectRoot.SetActive(true);
-        prevTimeScale = Time.timeScale;
-        Time.timeScale = 0f;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
-
-    public void CloseInspect() {
-        for (int i = 0; i < inspectItems.Count; i++)
-            inspectItems[i].SetActive(false);
-        inspectRoot.SetActive(false);
-        Time.timeScale = prevTimeScale == 0f ? 1f : prevTimeScale;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
     private void ShowGetOnce() {
         if (getAnimRoutine != null)
             StopCoroutine(getAnimRoutine);
@@ -266,7 +255,7 @@ public class GameManagerChap1 : MonoBehaviour {
 
     private void HideGetOnce() {
         if (getAnimRoutine != null)
-            StopCoroutine(getAnimRoutine);  
+            StopCoroutine(getAnimRoutine);
         getAnimRoutine = StartCoroutine(CoHideGet());
     }
 
@@ -361,6 +350,7 @@ public class GameManagerChap1 : MonoBehaviour {
         if (state == ChapState.ShutterOpened)
             state = ChapState.PowerRestoring;
         if (AreAllAuxOn() && state != ChapState.MainPowerRestored) {
+            StartFanRampToBoost();
             StartCoroutine(CoLightUpStreetLamps());
             state = ChapState.MainPowerRestored;
         }
@@ -398,13 +388,13 @@ public class GameManagerChap1 : MonoBehaviour {
     }
 
     private void Start() {
-        state = ChapState.PowerRestoring;
-        Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
+        //state = ChapState.PowerRestoring;
+        //Debug.Log($"[DEBUG] GameManagerChap1: 초기 상태를 {state} 로 설정");
+        ApplyFanImmediateForCurrentState();
     }
 
     public void NorthEasternAreaHintAvailable() {
         announcer.ShowBroadcast("주의: 서부 남쪽 구역에서 이상 신호 감지.");
-        monologue.ShowMessage("뭔가 답을 알 것 같은데.", monologue.defaultVisibleDuration, false);
         tutorialUI.ShowTutorial(2, puzzleTutorialDuration);
     }
 
@@ -536,7 +526,6 @@ public class GameManagerChap1 : MonoBehaviour {
         }
     }
 
-
     private void ForceAllStreetLampsOnInstant() {
         for (int i = 0; i < streetLamps.Count; i++) {
             var node = streetLamps[i];
@@ -547,6 +536,25 @@ public class GameManagerChap1 : MonoBehaviour {
             if (node.audio != null && node.audio.isPlaying)
                 node.audio.Stop();
         }
+    }
+
+    public bool AreAllStreetLampsOn() {
+        if (streetLamps == null || streetLamps.Count == 0)
+            return true;
+
+        for (int i = 0; i < streetLamps.Count; i++) {
+            var node = streetLamps[i];
+            if (node.light == null)
+                continue;
+            if (!node.light.enabled)
+                return false;
+        }
+
+        return true;
+    }
+
+    public bool IsMainPowerFullyOnline() {
+        return state == ChapState.MainPowerRestored && AreAllAuxOn() && AreAllStreetLampsOn();
     }
 
     public void ImportCheckpointData(int chapStateInt, int[] auxStates, bool[] pipeSolvedFlags) {
@@ -594,6 +602,8 @@ public class GameManagerChap1 : MonoBehaviour {
         if (checker != null) {
             checker.RestoreFromCheckpoint(state);
         }
+
+        ApplyFanImmediateForCurrentState();
     }
 
     public void ExportCheckpointData(out int chapStateInt, out int[] auxStates, out bool[] pipeSolvedFlags) {
@@ -626,5 +636,73 @@ public class GameManagerChap1 : MonoBehaviour {
                 }
             }
         }
+    }
+
+    private void ApplyFanImmediateForCurrentState() {
+        if (fanRampRoutine != null) {
+            StopCoroutine(fanRampRoutine);
+            fanRampRoutine = null;
+        }
+
+        bool boosted = state == ChapState.MainPowerRestored;
+
+        if (mainFanAnimator != null)
+            mainFanAnimator.speed = boosted ? fanBoostSpeed : fanBaseSpeed;
+
+        if (mainFanAudio != null) {
+            mainFanAudio.volume = boosted ? fanBoostVolume : fanBaseVolume;
+            mainFanAudio.pitch = boosted ? fanBoostPitch : fanBasePitch;
+        }
+    }
+
+    private void StartFanRampToBoost() {
+        if (mainFanAnimator == null && mainFanAudio == null)
+            return;
+
+        if (fanRampRoutine != null) {
+            StopCoroutine(fanRampRoutine);
+            fanRampRoutine = null;
+        }
+
+        float startSpeed = mainFanAnimator != null ? mainFanAnimator.speed : fanBaseSpeed;
+
+        float startVolume = fanBaseVolume;
+        float startPitch = fanBasePitch;
+
+        if (mainFanAudio != null) {
+            startVolume = mainFanAudio.volume;
+            startPitch = mainFanAudio.pitch;
+        }
+
+        fanRampRoutine = StartCoroutine(CoRampFan(startSpeed, fanBoostSpeed, startVolume, fanBoostVolume, startPitch, fanBoostPitch, fanRampDuration));
+    }
+
+    private IEnumerator CoRampFan(float startSpeed, float targetSpeed, float startVolume, float targetVolume, float startPitch, float targetPitch, float duration) {
+        float t = 0f;
+
+        while (t < 1f) {
+            t += Time.deltaTime / Mathf.Max(0.0001f, duration);
+            float k = Mathf.SmoothStep(0f, 1f, t);
+
+            if (mainFanAnimator != null)
+                mainFanAnimator.speed = Mathf.Lerp(startSpeed, targetSpeed, k);
+
+            if (mainFanAudio != null) {
+                mainFanAudio.volume = Mathf.Lerp(startVolume, targetVolume, k);
+                mainFanAudio.pitch = Mathf.Lerp(startPitch, targetPitch, k);
+            }
+
+            yield return null;
+        }
+
+        if (mainFanAnimator != null)
+            mainFanAnimator.speed = targetSpeed;
+
+        if (mainFanAudio != null) {
+            mainFanAudio.volume = targetVolume;
+            mainFanAudio.pitch = targetPitch;
+        }
+
+        fanRampRoutine = null;
     }
 }

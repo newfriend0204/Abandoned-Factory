@@ -78,7 +78,7 @@ public class Chap2Step1ManualDiagnosticsController : MonoBehaviour {
         if (sessionLocked)
             return;
 
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return;
 
         if (!acceptingInput)

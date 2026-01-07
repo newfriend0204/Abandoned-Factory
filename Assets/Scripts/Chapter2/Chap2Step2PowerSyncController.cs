@@ -173,7 +173,7 @@ public class Chap2Step2PowerSyncController : MonoBehaviour {
     }
 
     private bool IsStep2InteractionActive() {
-        return Chap2StepInteractionService.IsInStepMode;
+        return InteractionModeService.IsInInteractionMode;
     }
 
     private void OnSessionStart() {

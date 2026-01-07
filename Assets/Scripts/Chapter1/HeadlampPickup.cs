@@ -26,7 +26,7 @@ public class HeadlampPickup : MonoBehaviour {
     [Header("Tutorial UI")]
     public TutorialHintUI tutorialUI;
 
-    private MeshCollider targetCollider;
+    private Collider[] interactColliders;
     private bool pickedUp = false;
 
     void Awake() {
@@ -36,11 +36,10 @@ public class HeadlampPickup : MonoBehaviour {
                 player = p.transform;
         }
 
-        if (viewCamera == null) {
+        if (viewCamera == null)
             viewCamera = Camera.main;
-        }
 
-        targetCollider = GetComponentInChildren<MeshCollider>();
+        interactColliders = GetComponentsInChildren<Collider>(true);
 
         if (outline != null)
             outline.enabled = false;
@@ -50,9 +49,8 @@ public class HeadlampPickup : MonoBehaviour {
         if (pickedUp)
             return;
 
-        if (player == null || viewCamera == null || gameManager == null) {
+        if (player == null || viewCamera == null || gameManager == null)
             TryResolveDynamicRefs();
-        }
 
         bool hintOn = IsInteractHintOn();
 
@@ -64,27 +62,27 @@ public class HeadlampPickup : MonoBehaviour {
             inOutlineRange = distance <= outlineDistance;
         }
 
-        if (outline != null) {
+        if (outline != null)
             outline.enabled = hintOn && inOutlineRange;
-        }
 
         bool lookingAt = false;
-        if (viewCamera != null && targetCollider != null) {
+        if (viewCamera != null && interactColliders != null && interactColliders.Length > 0) {
             Ray ray = new Ray(viewCamera.transform.position, viewCamera.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, interactDistance)) {
-                if (hit.collider == targetCollider) {
-                    lookingAt = true;
+                for (int i = 0; i < interactColliders.Length; i++) {
+                    if (hit.collider == interactColliders[i]) {
+                        lookingAt = true;
+                        break;
+                    }
                 }
             }
         }
 
-        if (hintOn && inOutlineRange && lookingAt && gameManager != null) {
+        if (hintOn && inOutlineRange && lookingAt && gameManager != null)
             gameManager.Pressable(4);
-        }
 
-        if (lookingAt && distance <= interactDistance && WasInteractPressedThisFrame()) {
+        if (lookingAt && distance <= interactDistance && WasInteractPressedThisFrame())
             HandlePickup();
-        }
     }
 
     private void HandlePickup() {
@@ -92,23 +90,19 @@ public class HeadlampPickup : MonoBehaviour {
 
         HideVisuals();
 
-        if (headlampController != null) {
+        if (headlampController != null)
             headlampController.canUseHeadlamp = true;
-        }
 
-        if (tutorialUI != null) {
+        if (tutorialUI != null)
             tutorialUI.ShowTutorial(1, 5f);
-        }
 
-        if (gameManager != null && gameManager.monologue != null) {
+        if (gameManager != null && gameManager.monologue != null)
             StartCoroutine(MonologueSequence());
-        }
     }
 
     private IEnumerator MonologueSequence() {
-        if (!string.IsNullOrEmpty(firstLine)) {
+        if (!string.IsNullOrEmpty(firstLine))
             gameManager.monologue.ShowMessage(firstLine, firstDuration, false);
-        }
 
         if (!string.IsNullOrEmpty(secondLine)) {
             yield return new WaitForSeconds(delayBetweenLines);
@@ -123,9 +117,8 @@ public class HeadlampPickup : MonoBehaviour {
                 player = p.transform;
         }
 
-        if (viewCamera == null) {
+        if (viewCamera == null)
             viewCamera = Camera.main;
-        }
     }
 
     private bool WasInteractPressedThisFrame() {
@@ -149,15 +142,17 @@ public class HeadlampPickup : MonoBehaviour {
         if (outline != null)
             outline.enabled = false;
 
-        var renderers = GetComponentsInChildren<Renderer>();
-        foreach (var r in renderers) {
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renderers)
             r.enabled = false;
-        }
 
-        var lights = GetComponentsInChildren<Light>();
-        foreach (var l in lights) {
+        var lights = GetComponentsInChildren<Light>(true);
+        foreach (var l in lights)
             l.enabled = false;
-        }
+
+        var colliders = GetComponentsInChildren<Collider>(true);
+        foreach (var c in colliders)
+            c.enabled = false;
     }
 
     public void RestorePickedStateFromCheckpoint() {

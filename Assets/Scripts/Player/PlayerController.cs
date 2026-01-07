@@ -44,6 +44,16 @@ public class PlayerController : MonoBehaviour {
     private int walkRunDefault = 0;
     private bool cameraShakeEnabled = true;
 
+    private bool impulseActive;
+    private float impulseStartTime;
+    private float impulseDuration;
+    private float impulsePosAmplitude;
+    private float impulseRotAmplitude;
+    private float impulseFrequency;
+    private float impulseSeedX;
+    private float impulseSeedY;
+    private float impulseSeedZ;
+
     private float mouseSensitivity = 1.0f;
     private float mouseSensitivityX = 1.0f;
     private float mouseSensitivityY = 1.0f;
@@ -274,6 +284,10 @@ public class PlayerController : MonoBehaviour {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             return;
+        }
+        if (InteractionModeService.IsInInteractionMode) {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         } else {
             if (lockCursor) {
                 Cursor.lockState = CursorLockMode.Locked;
@@ -582,14 +596,70 @@ public class PlayerController : MonoBehaviour {
             landingRollT = Mathf.MoveTowards(landingRollT, 0f, Time.deltaTime / landingRollDuration);
         }
 
+        Vector3 impulsePos;
+        Vector3 impulseRot;
+        SampleCameraImpulse(out impulsePos, out impulseRot);
+
         Vector3 pos = camBaseLocalPos;
         pos.y += bobOffset + kickOffsetY;
+        pos += impulsePos;
+
         if (playerCamera != null) {
             playerCamera.transform.localPosition = pos;
             float finalRoll = Mathf.Clamp(fxRoll + rollPulse, -rollClamp, rollClamp);
             float yawToApply = useBodyRotation ? 0f : currentYaw;
-            playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch, yawToApply, finalRoll);
+            float rollWithImpulse = Mathf.Clamp(finalRoll + impulseRot.z, -rollClamp, rollClamp);
+            playerCamera.transform.localRotation = Quaternion.Euler(pitch + fxPitch + impulseRot.x, yawToApply + impulseRot.y, rollWithImpulse);
         }
+    }
+
+    public void PlayCameraImpulse(float duration, float posAmplitude, float rotAmplitude, float frequency) {
+        if (!cameraShakeEnabled)
+            return;
+        if (playerCamera == null)
+            return;
+
+        impulseActive = true;
+        impulseStartTime = Time.time;
+        impulseDuration = Mathf.Max(0.01f, duration);
+        impulsePosAmplitude = Mathf.Max(0f, posAmplitude);
+        impulseRotAmplitude = Mathf.Max(0f, rotAmplitude);
+        impulseFrequency = Mathf.Max(1f, frequency);
+
+        impulseSeedX = Random.Range(0f, 1000f);
+        impulseSeedY = Random.Range(0f, 1000f);
+        impulseSeedZ = Random.Range(0f, 1000f);
+    }
+
+    private void SampleCameraImpulse(out Vector3 posOffset, out Vector3 rotOffset) {
+        posOffset = Vector3.zero;
+        rotOffset = Vector3.zero;
+
+        if (!impulseActive)
+            return;
+
+        float elapsed = Time.time - impulseStartTime;
+        if (elapsed >= impulseDuration) {
+            impulseActive = false;
+            return;
+        }
+
+        float t01 = Mathf.Clamp01(elapsed / impulseDuration);
+        float env = 1f - t01;
+        env *= env;
+
+        float nT = Time.time * impulseFrequency;
+
+        float nx = Mathf.PerlinNoise(impulseSeedX, nT) * 2f - 1f;
+        float ny = Mathf.PerlinNoise(impulseSeedY, nT + 17.31f) * 2f - 1f;
+        float nz = Mathf.PerlinNoise(impulseSeedZ, nT + 41.77f) * 2f - 1f;
+
+        float rx = Mathf.PerlinNoise(impulseSeedX + 101.1f, nT + 9.13f) * 2f - 1f;
+        float ry = Mathf.PerlinNoise(impulseSeedY + 202.2f, nT + 27.9f) * 2f - 1f;
+        float rz = Mathf.PerlinNoise(impulseSeedZ + 303.3f, nT + 55.6f) * 2f - 1f;
+
+        posOffset = new Vector3(nx, ny, nz) * (impulsePosAmplitude * env);
+        rotOffset = new Vector3(rx, ry, rz) * (impulseRotAmplitude * env);
     }
 
     public void SetRestrictedMode(

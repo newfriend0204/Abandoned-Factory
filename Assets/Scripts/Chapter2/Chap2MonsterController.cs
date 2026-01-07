@@ -55,7 +55,7 @@ public class Chap2MonsterController : MonoBehaviour {
     [SerializeField] private float lookTimeToScare = 1.2f;
     [SerializeField] private float maxViewDistance = 40f;
 
-    [Header("Look-Away Line Of Sight")]
+    [Header("Look-Away Line Of Sight")]/
     [SerializeField] private bool useLineOfSightForLookAway = true;
     [SerializeField] private LayerMask lookAwayOcclusionMask = ~0;
     [SerializeField] private float lookAwayTargetHeight = 1.4f;
@@ -99,11 +99,7 @@ public class Chap2MonsterController : MonoBehaviour {
     [SerializeField] private bool autoRespawnWhileYSequence = true;
     [SerializeField] private float respawnDelaySeconds = 3.0f;
     [SerializeField] private bool respawnIgnorePlayerView = true;
-
-    [Tooltip("After the monster retreats because the player stared at it (look-away reaction).")]
     [SerializeField] private float respawnDelayAfterLookAwaySeconds = 2.0f;
-
-    [Tooltip("After the player wins the locker QTE and the monster vanishes.")]
     [SerializeField] private float respawnDelayAfterQteWinSeconds = 6.0f;
 
     [Header("View Reaction (Normal Feature)")]

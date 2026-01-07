@@ -6,14 +6,19 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class Keypad : MonoBehaviour {
     [Header("Refs")]
-    [SerializeField] private TextMeshProUGUI display;
+    [SerializeField] private TMP_Text display;
     [SerializeField] private Light statusLight;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource sfxSource;
+
     [SerializeField] private AudioClip successSfx;
     [SerializeField] private AudioClip wrongSfx;
     [SerializeField] private AudioClip buttonSfx;
-    public float successVol = 1f;
-    public float wrongVol = 1f;
-    public float buttonVol = 1f;
+
+    [Range(0f, 1f)] public float successVol = 1f;
+    [Range(0f, 1f)] public float wrongVol = 1f;
+    [Range(0f, 1f)] public float buttonVol = 1f;
 
     [Header("Settings")]
     [SerializeField] private string correctCode = "1378";
@@ -21,7 +26,6 @@ public class Keypad : MonoBehaviour {
     [SerializeField] private bool clearOnSuccess = true;
 
     private GameManagerChap1 gm;
-    private AudioSource audioSource;
     private List<int> auxList;
     private readonly List<char> buffer = new List<char>(4);
 
@@ -29,31 +33,50 @@ public class Keypad : MonoBehaviour {
 
     private void Awake() {
         gm = FindFirstObjectByType<GameManagerChap1>();
-        audioSource = GetComponent<AudioSource>();
 
-        var field = typeof(GameManagerChap1).GetField("auxPowerStates", BindingFlags.Instance | BindingFlags.NonPublic);
-        auxList = (List<int>)field.GetValue(gm);
+        if (sfxSource == null)
+            sfxSource = GetComponent<AudioSource>();
+
+        if (gm != null) {
+            var field = typeof(GameManagerChap1).GetField("auxPowerStates", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field != null)
+                auxList = (List<int>)field.GetValue(gm);
+        }
 
         UpdateLightByState();
         UpdateDisplay();
     }
 
     private void UpdateDisplay() {
+        if (display == null)
+            return;
+
         string current = new string(buffer.ToArray());
         display.text = current.PadLeft(codeLength, ' ');
     }
 
     private void UpdateLightByState() {
+        if (statusLight == null || auxList == null || auxList.Count <= 1)
+            return;
+
         statusLight.color = (auxList[1] == 0) ? Color.red : Color.green;
     }
 
+    private void PlayOneShotSafe(AudioClip clip, float vol) {
+        if (clip == null || sfxSource == null)
+            return;
+
+        sfxSource.PlayOneShot(clip, vol);
+    }
+
     private void PlayButtonClick() {
-        audioSource.PlayOneShot(buttonSfx, buttonVol);
+        PlayOneShotSafe(buttonSfx, buttonVol);
     }
 
     private void InputDigit(int d) {
         if (buffer.Count >= codeLength)
             return;
+
         buffer.Add((char)('0' + d));
         UpdateDisplay();
     }
@@ -80,13 +103,15 @@ public class Keypad : MonoBehaviour {
 
         string typed = new string(buffer.ToArray());
         if (typed == correctCode) {
-            if (auxList[1] == 0)
-                auxList[1] = 1;
+            if (auxList != null && auxList.Count > 1) {
+                if (auxList[1] == 0)
+                    auxList[1] = 1;
 
-            UpdateLightByState();
+                UpdateLightByState();
+            }
 
-            if (successSfx)
-                audioSource.PlayOneShot(successSfx, successVol);
+            PlayOneShotSafe(successSfx, successVol);
+
             if (clearOnSuccess)
                 Clear();
 
@@ -97,8 +122,7 @@ public class Keypad : MonoBehaviour {
                 checkpointSaved = true;
             }
         } else {
-            if (wrongSfx)
-                audioSource.PlayOneShot(wrongSfx, wrongVol);
+            PlayOneShotSafe(wrongSfx, wrongVol);
             Clear();
         }
     }

@@ -24,6 +24,11 @@ public class HeadlampController : MonoBehaviour {
     public float microDipDuration = 0.07f;
     public Vector2 microDipInterval = new Vector2(2.5f, 6.0f);
 
+    [Header("Follow Smoothing")]
+    public bool smoothFollow = true;
+    public float positionLag = 0.08f;
+    public float rotationLag = 0.06f;
+
     [Header("Auto Dimmer")]
     public bool autoDimByDistance = true;
     public float dimNear = 0.6f;
@@ -50,6 +55,19 @@ public class HeadlampController : MonoBehaviour {
 
     bool savedStateValid;
     bool savedIsOn;
+
+    float noiseSeed;
+    float nextDipTime;
+    bool dipActive;
+    float dipT;
+
+    float baseSpotAngle;
+    float baseInnerSpotAngle;
+    bool innerAngleSupported;
+
+    bool followInitialized;
+    Vector3 followPos;
+    Quaternion followRot;
 
     public void SetInputLocked(bool locked) {
         if (inputLocked == locked)
@@ -90,36 +108,40 @@ public class HeadlampController : MonoBehaviour {
         ScheduleNextDip();
     }
 
-    float noiseSeed;
-    float nextDipTime;
-    bool dipActive;
-    float dipT;
-
-    float baseSpotAngle;
-    float baseInnerSpotAngle;
-    bool innerAngleSupported;
-
     void Start() {
         isOn = startOn;
         fadeBase = isOn ? onIntensity : 0f;
 
-        headlamp.enabled = fadeBase > 0.001f;
-        headlamp.intensity = fadeBase;
-        baseSpotAngle = headlamp.spotAngle;
+        if (headlamp != null) {
+            headlamp.enabled = fadeBase > 0.001f;
+            headlamp.intensity = fadeBase;
+            baseSpotAngle = headlamp.spotAngle;
 
-        innerAngleSupported = true;
-        baseInnerSpotAngle = headlamp.innerSpotAngle;
+            innerAngleSupported = true;
+            baseInnerSpotAngle = headlamp.innerSpotAngle;
+        }
 
         noiseSeed = Random.value * 100f;
         ScheduleNextDip();
+
+        InitializeFollowState(true);
     }
 
     void Update() {
+        if (headlamp == null || followTarget == null)
+            return;
+
         if (!canUseHeadlamp) {
+            InitializeFollowState(true);
             headlamp.enabled = false;
             headlamp.intensity = 0f;
             return;
         }
+
+        if (!followInitialized)
+            InitializeFollowState(true);
+
+        UpdateFollowTransform(false);
 
         if (inputLocked) {
             if (forceOffWhileLocked)
@@ -147,25 +169,21 @@ public class HeadlampController : MonoBehaviour {
             }
         }
 
-        headlamp.transform.SetPositionAndRotation(
-            followTarget.TransformPoint(localOffset),
-            followTarget.rotation * Quaternion.Euler(localEulerOffset)
-        );
-
         float mod = 1f;
 
-        if (autoDimByDistance && followTarget != null) {
+        if (autoDimByDistance) {
             float distFactor = 1f;
             float hitDist = Mathf.Infinity;
 
             RaycastHit hit;
-            Vector3 o = followTarget.position;
-            Vector3 d = followTarget.forward;
+
+            Vector3 o = headlamp.transform.position;
+            Vector3 d = headlamp.transform.forward;
+
             float maxProbe = Mathf.Max(dimFar * 1.2f, 0.5f);
 
-            if (Physics.SphereCast(o, probeRadius, d, out hit, maxProbe, occluderMask, QueryTriggerInteraction.Ignore)) {
+            if (Physics.SphereCast(o, probeRadius, d, out hit, maxProbe, occluderMask, QueryTriggerInteraction.Ignore))
                 hitDist = hit.distance;
-            }
 
             distFactor = Mathf.InverseLerp(dimNear, dimFar, hitDist);
             mod *= Mathf.Lerp(dimMinFactor, 1f, distFactor);
@@ -211,6 +229,50 @@ public class HeadlampController : MonoBehaviour {
         }
     }
 
+    void InitializeFollowState(bool snap) {
+        if (headlamp == null || followTarget == null)
+            return;
+
+        Vector3 targetPos = followTarget.TransformPoint(localOffset);
+        Quaternion targetRot = followTarget.rotation * Quaternion.Euler(localEulerOffset);
+
+        followPos = targetPos;
+        followRot = targetRot;
+        headlamp.transform.SetPositionAndRotation(followPos, followRot);
+
+        followInitialized = true;
+    }
+
+    void UpdateFollowTransform(bool snap) {
+        Vector3 targetPos = followTarget.TransformPoint(localOffset);
+        Quaternion targetRot = followTarget.rotation * Quaternion.Euler(localEulerOffset);
+
+        if (!smoothFollow || snap) {
+            followPos = targetPos;
+            followRot = targetRot;
+            headlamp.transform.SetPositionAndRotation(followPos, followRot);
+            return;
+        }
+
+        float dt = Time.deltaTime;
+
+        if (positionLag <= 0.0001f) {
+            followPos = targetPos;
+        } else {
+            float kPos = 1f - Mathf.Exp(-dt / positionLag);
+            followPos = Vector3.Lerp(followPos, targetPos, kPos);
+        }
+
+        if (rotationLag <= 0.0001f) {
+            followRot = targetRot;
+        } else {
+            float kRot = 1f - Mathf.Exp(-dt / rotationLag);
+            followRot = Quaternion.Slerp(followRot, targetRot, kRot);
+        }
+
+        headlamp.transform.SetPositionAndRotation(followPos, followRot);
+    }
+
     IEnumerator FadeBase(float target, float time) {
         float start = fadeBase;
         float t = 0f;
@@ -234,7 +296,13 @@ public class HeadlampController : MonoBehaviour {
     }
 
     void PlayClick(bool on) {
+        if (audioSource == null)
+            return;
+
         var clip = on ? clickOn : clickOff;
+        if (clip == null)
+            return;
+
         audioSource.PlayOneShot(clip);
     }
 }

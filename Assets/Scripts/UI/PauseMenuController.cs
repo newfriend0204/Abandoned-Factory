@@ -94,7 +94,7 @@ public class PauseMenuController : MonoBehaviour {
         if (DeathManager.Instance != null && DeathManager.Instance.IsDead)
             return;
 
-        if (Chap2StepInteractionService.IsInStepMode)
+        if (InteractionModeService.IsInInteractionMode)
             return;
 
         if (Input.GetKeyDown(KeyCode.Escape)) {
@@ -106,7 +106,7 @@ public class PauseMenuController : MonoBehaviour {
     }
 
     void LateUpdate() {
-        wasInStepModePrevFrame = Chap2StepInteractionService.IsInStepMode;
+        wasInStepModePrevFrame = InteractionModeService.IsInInteractionMode;
     }
 
     public void MarkSettingChanged() {

@@ -108,6 +108,7 @@ public class GameManagerChap2 : MonoBehaviour {
             case 2: getText.text = $"나가기({keyLabel})"; break;
             case 3: getText.text = $"누르기(좌클릭)"; break;
             case 4: getText.text = $"돌리기({keyLabel})"; break;
+            case 5: getText.text = $"조사하기({keyLabel})"; break;
             default: getText.text = $"상호작용({keyLabel})"; break;
         }
 

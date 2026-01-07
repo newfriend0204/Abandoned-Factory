@@ -291,7 +291,7 @@ public class Chap2Step5SafetyInterlockController : MonoBehaviour {
 
     private void Update() {
         bool sessionActive = IsStep5SessionActive();
-        bool interactionActive = sessionActive && Chap2StepInteractionService.IsInStepMode;
+        bool interactionActive = sessionActive && InteractionModeService.IsInInteractionMode;
 
         if (sessionActive && !wasSessionActive)
             OnSessionStart();
@@ -429,7 +429,7 @@ public class Chap2Step5SafetyInterlockController : MonoBehaviour {
     public void PressConfirm() {
         if (!IsStep5SessionActive())
             return;
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return;
         if (state != StepState.Running)
             return;
@@ -456,7 +456,7 @@ public class Chap2Step5SafetyInterlockController : MonoBehaviour {
     private bool CanAdjust() {
         if (!IsStep5SessionActive())
             return false;
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return false;
         if (state != StepState.Running)
             return false;

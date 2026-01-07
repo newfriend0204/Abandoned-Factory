@@ -15,7 +15,7 @@ public class GameSettingsApplier : MonoBehaviour {
 
     [Header("Bloom / MotionBlur Intensity When On")]
     [Range(0f, 10f)]
-    public float bloomIntensityWhenOn = 3f;
+    public float bloomIntensityWhenOn = 0.3f;
 
     [Range(0f, 1f)]
     public float motionBlurIntensityWhenOn = 0.4f;

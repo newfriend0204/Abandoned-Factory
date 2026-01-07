@@ -285,6 +285,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuGameStartController
   firstChapterSceneName: Chap1
+  chap2FirstSceneName: Chap2
 --- !u!4 &590000599
 Transform:
   m_ObjectHideFlags: 0
@@ -1454,7 +1455,6 @@ MonoBehaviour:
   hasHeadlamp: 0
   savedSprintStamina: -1
   savedIsExhausted: 0
-  debugLog: 0
 --- !u!4 &2112093912
 Transform:
   m_ObjectHideFlags: 0
@@ -1555,7 +1555,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 590000598}
         m_TargetAssemblyTypeName: MainMenuGameStartController, Assembly-CSharp
-        m_MethodName: OnClickStartIgnoreSave
+        m_MethodName: OnClickStartIgnoringSave
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

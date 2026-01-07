@@ -104,7 +104,7 @@ public class Chap2CheckpointManager : MonoBehaviour, ICheckpointService {
 
         ApplyCheckpointToScene();
 
-        Chap2StepInteractionService.SetStepMode(false);
+        InteractionModeService.SetInteractionMode(false);
         Time.timeScale = 1f;
 
         isLoading = false;

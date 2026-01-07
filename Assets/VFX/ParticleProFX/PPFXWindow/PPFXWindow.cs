@@ -82,7 +82,7 @@ public class PPFXWindow : EditorWindow {
 	
 	void OnEnable(){
 	#if UNITY_EDITOR
-	    EditorApplication.playmodeStateChanged += StateChange;
+	    //EditorApplication.playmodeStateChanged += StateChange;
 	#endif
 	}
 	 

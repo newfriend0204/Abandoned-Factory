@@ -15,7 +15,7 @@ public class Chap2Step3PressureValveController : MonoBehaviour {
         public string label = "A";
 
         [Header("Refs")]
-        public Chap2StepElement valveElement;
+        public InteractableElement valveElement;
         public Transform valveVisual;
 
         public TMP_Text gaugeText;
@@ -314,7 +314,7 @@ public class Chap2Step3PressureValveController : MonoBehaviour {
     }
 
     private void TickLines(float dt) {
-        bool inStepMode = Chap2StepInteractionService.IsInStepMode;
+        bool inStepMode = InteractionModeService.IsInInteractionMode;
 
         for (int i = 0; i < lines.Length; i++) {
             PressureLine l = lines[i];
@@ -531,7 +531,7 @@ public class Chap2Step3PressureValveController : MonoBehaviour {
         if (!IsStep3SessionActive())
             return;
 
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return;
 
         if (completionTriggered)

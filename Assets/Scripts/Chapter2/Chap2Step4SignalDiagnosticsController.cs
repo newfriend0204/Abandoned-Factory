@@ -129,7 +129,7 @@ public class Chap2Step4SignalDiagnosticsController : MonoBehaviour {
 
     private void Update() {
         bool sessionActive = IsStep4SessionActive();
-        bool interactionActive = sessionActive && Chap2StepInteractionService.IsInStepMode;
+        bool interactionActive = sessionActive && InteractionModeService.IsInInteractionMode;
 
         if (sessionActive && !wasSessionActive)
             OnSessionStart();
@@ -251,7 +251,7 @@ public class Chap2Step4SignalDiagnosticsController : MonoBehaviour {
     public void PressStart() {
         if (!IsStep4SessionActive())
             return;
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return;
         if (stage == SubStage.Done)
             return;
@@ -280,7 +280,7 @@ public class Chap2Step4SignalDiagnosticsController : MonoBehaviour {
     public void PressStop() {
         if (!IsStep4SessionActive())
             return;
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return;
         if (stage == SubStage.Done)
             return;
@@ -302,7 +302,7 @@ public class Chap2Step4SignalDiagnosticsController : MonoBehaviour {
     public void PressRepair() {
         if (!IsStep4SessionActive())
             return;
-        if (!Chap2StepInteractionService.IsInStepMode)
+        if (!InteractionModeService.IsInInteractionMode)
             return;
         if (stage == SubStage.Done)
             return;
