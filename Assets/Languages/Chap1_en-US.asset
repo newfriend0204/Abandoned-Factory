@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Chap1_en-US
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en-US
+  m_SharedData: {fileID: 11400000, guid: 98b465beb6f51e444b4aef1605a198f3, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 74798288896
+    m_Localized: "Well\u2026 one thing\u2019s certain. If I fall from here, I\u2019m
+      dead."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1043401494528
+    m_Localized: "There\u2019s only one chance here. If I fall, it\u2019s over."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1113047912448
+    m_Localized: "If I fall, it probably won\u2019t last long enough to hurt."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1371526090752
+    m_Localized: "The ground\u2014!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1562945736704
+    m_Localized: This is the western northern area.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1613931696128
+    m_Localized: This is the western southern area.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1672073138176
+    m_Localized: This is the eastern northern area.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1731149910016
+    m_Localized: This is the eastern southern area.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1939518738432
+    m_Localized: "\u2026!? That sound just now\u2026 a door opening? Is there someone
+      else besides me?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217925849141248
+    m_Localized: "If I jump carefully from this railing, I might be able to reach
+      another place\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 220289591103488
+    m_Localized: "They hid numbers in a place like this\u2026?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 223114299658240
+    m_Localized: "This place\u2026 is it a garage? And a pit?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 223207929106432
+    m_Localized: "Luckily, there\u2019s a structure here. With a bit of parkour,
+      I should be able to get across."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 224909407244288
+    m_Localized: "If I restore the main power, it looks like I\u2019ll be able to
+      pull the lever."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 225602776027136
+    m_Localized: That was close. That was dangerous.
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

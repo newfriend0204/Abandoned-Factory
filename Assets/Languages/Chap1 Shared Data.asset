@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Chap1 Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Chap1
+  m_TableCollectionNameGuidString: 98b465beb6f51e444b4aef1605a198f3
+  m_Entries:
+  - m_Id: 74798288896
+    m_Key: FALL_WARNING_1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1043401494528
+    m_Key: FALL_WARNING_2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1113047912448
+    m_Key: FALL_WARNING_3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1371526090752
+    m_Key: FALLING_PANIC
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1562945736704
+    m_Key: WEST_NORTH_AREA
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1613931696128
+    m_Key: WEST_SOUTH_AREA
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1672073138176
+    m_Key: EAST_NORTH_AREA
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1731149910016
+    m_Key: EAST_SOUTH_AREA
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1939518738432
+    m_Key: OPEN_IRON_DOOR_REACTION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217925849141248
+    m_Key: RAILING_JUMP_HINT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 220289591103488
+    m_Key: HIDDEN_NUMBER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 223114299658240
+    m_Key: GARAGE_ENTER_1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 223207929106432
+    m_Key: GARAGE_ENTER_2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 224909407244288
+    m_Key: RESTORE_MAIN_POWER_LEVER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 225602776027136
+    m_Key: NEAR_FALL_PARKOUR_SUCCESS
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 7185300971829330044
+  references:
+    version: 2
+    RefIds:
+    - rid: 7185300971829330044
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1767833575527

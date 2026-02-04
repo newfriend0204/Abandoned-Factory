@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Chap2 Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Chap2
+  m_TableCollectionNameGuidString: 6d2ce58259f33374d8477e1b97be0cdd
+  m_Entries:
+  - m_Id: 82335453184
+    m_Key: MONSTER_LEAVE_1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 167106531328
+    m_Key: MONSTER_LEAVE_2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 220621656064
+    m_Key: MONSTER_LEAVE_3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 286656778240
+    m_Key: MONSTER_LEAVE_4
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 7185300971829330046
+  references:
+    version: 2
+    RefIds:
+    - rid: 7185300971829330046
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1767834207696

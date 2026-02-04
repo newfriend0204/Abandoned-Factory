@@ -211,6 +211,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MonologueEntry
   text: {fileID: 7303425361380048709}
   canvasGroup: {fileID: 2517480726855150653}
+  autoResizeBackdropWidth: 1
+  backgroundImage: {fileID: 6259631665371669864}
+  backdropPaddingX: 60
+  backdropMinWidth: 140
+  updateBackdropDuringTypewriter: 1
+  forceCenterAnchors: 1
   noiseImage: {fileID: 375992787016788122}
   enableNoise: 1
   noiseRandomInterval: 0.05

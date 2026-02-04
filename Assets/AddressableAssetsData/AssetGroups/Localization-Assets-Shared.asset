@@ -30,6 +30,16 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6d2ce58259f33374d8477e1b97be0cdd
+    m_Address: Assets/Languages/New Table Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 98b465beb6f51e444b4aef1605a198f3
+    m_Address: Assets/Languages/Monologue Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 1
   m_Settings: {fileID: 11400000, guid: bb2ae8db7c8de094ebc2609973a8bf00, type: 2}
   m_SchemaSet:
